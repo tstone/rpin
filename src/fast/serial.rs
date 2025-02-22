@@ -17,7 +17,7 @@ fn connect(port_path: &str) -> Box<dyn SerialPort> {
         Ok(port) => port,
         Err(e) => {
             log::error!("{:?} - {}", e.kind, e.description);
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(300));
             return connect(port_path);
         }
     }
@@ -37,7 +37,7 @@ pub fn spawn(
             if let Ok(req) = io_rx.try_recv() {
                 let msg = req.to_string();
                 let outbound = format!("{msg}\r");
-                log::trace!("Writing {} bytes to {io_net_port_path}", outbound.len());
+                log::trace!("Writing to {io_net_port_path}: {outbound}");
                 let _ = io_net_port.write(outbound.as_bytes());
             }
 
@@ -45,7 +45,10 @@ pub fn spawn(
             let mut buffer: String = String::new();
             let _ = io_net_port.read_to_string(&mut buffer);
             if buffer.len() > 0 {
-                log::trace!("Read {} bytes from {io_net_port_path}", buffer.len());
+                log::trace!(
+                    "Read {} bytes from {io_net_port_path}: {buffer}",
+                    buffer.len()
+                );
                 let _ = main_tx.send(InternalEvent::IncomingData { raw: buffer });
             }
 
