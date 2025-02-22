@@ -4,30 +4,39 @@ pub enum FspResponse {
     Id {
         identity: String,
     },
+    IdFailed,
     NodeId {
         id: u8,
         serial: String,
+    },
+    NodeInfo {
+        id: u8,
+        name: String,
+        firmware: String,
+        driver_count: u16,
+        switch_count: u16,
     },
     Unknown {
         command: String,
         address: Option<String>,
         data: Option<String>,
     },
-    IdFailed,
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum FspRequest {
-    Id,
-    NodeId,
+    GetId,
+    GetNodeId,
+    GetNodeInfo,
 }
 
 impl FspRequest {
     pub fn to_string(&self) -> String {
         match self {
-            Self::Id => String::from("ID:"),
-            Self::NodeId => String::from("NI:"),
+            Self::GetId => String::from("ID:"),
+            Self::GetNodeId => String::from("NI:"),
+            Self::GetNodeInfo => String::from("NN:"),
         }
     }
 }

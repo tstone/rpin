@@ -22,6 +22,13 @@ pub fn parse(input: String) -> Result<FspResponse, &'static str> {
                     id: args[0].parse::<u8>().unwrap(), // TODO: is this actually in hex?
                     serial: String::from(args[1]),
                 }),
+                "NN" => Ok(FspResponse::NodeInfo {
+                    id: args[0].parse::<u8>().unwrap(),
+                    name: String::from(args[1].trim()),
+                    firmware: String::from(args[2]),
+                    driver_count: args[3].parse::<u16>().unwrap(),
+                    switch_count: args[4].parse::<u16>().unwrap(),
+                }),
                 _ => Ok(FspResponse::Unknown {
                     command: String::from(command),
                     address: address.map(|s| String::from(s)),
@@ -76,6 +83,27 @@ mod tests {
             FspResponse::NodeId { id, serial } => {
                 assert_eq!(id, 1);
                 assert_eq!(serial, "A6E616CE514C505136202020FF0E141D");
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn it_parses_node_info_commands() {
+        let raw = "NN:01,FP-I/O-1616-2  ,00.89,10,10,04,06,00,00,00,00";
+        match parse(raw.to_string()).unwrap() {
+            FspResponse::NodeInfo {
+                id,
+                name,
+                firmware,
+                driver_count,
+                switch_count,
+            } => {
+                assert_eq!(id, 1);
+                assert_eq!(name, "FP-I/O-1616-2");
+                assert_eq!(firmware, "00.89");
+                assert_eq!(driver_count, 4);
+                assert_eq!(switch_count, 6);
             }
             _ => panic!(),
         }

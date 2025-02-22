@@ -1,3 +1,4 @@
+mod boot;
 mod fsp;
 mod parser;
 mod serial;

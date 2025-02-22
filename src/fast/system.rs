@@ -1,15 +1,16 @@
 use log;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-use super::fsp::{FspRequest, FspResponse::*};
-use super::{parser, serial};
+use super::fsp::FspRequest;
+use super::serial;
 
 pub enum InternalEvent {
     IncomingData { raw: String },
 }
 
+use super::boot::*;
 use InternalEvent::*;
 
 pub struct System;
@@ -29,31 +30,15 @@ impl System {
 
         wait_for_system_boot(&main_rx, &io_net_tx);
         log::info!("System online.");
-    }
-}
 
-fn wait_for_system_boot(main_rx: &Receiver<InternalEvent>, io_tx: &Sender<FspRequest>) {
-    loop {
-        let _ = io_tx.send(FspRequest::Id);
-
-        match main_rx.recv_timeout(Duration::from_millis(100)) {
-            Ok(event) => match event {
-                IncomingData { raw } => match parser::parse(raw) {
-                    Ok(msg) => match msg {
-                        Id { identity } => {
-                            log::debug!("Identified board as {identity}");
-                            break;
-                        }
-                        IdFailed => {
-                            log::debug!("Startup identification failed. Trying again.");
-                        }
-                        _ => {}
-                    },
-                    _ => {}
+        loop {
+            match main_rx.try_recv() {
+                Err(_) => {}
+                Ok(event) => match event {
+                    IncomingData { raw } => log::info!("Recieved response: {raw}"),
                 },
-            },
-            _ => {}
+            }
+            thread::sleep(Duration::from_millis(1));
         }
-        thread::sleep(Duration::from_millis(1));
     }
 }

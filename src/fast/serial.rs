@@ -9,11 +9,18 @@ use super::InternalEvent;
 
 fn connect(port_path: &str) -> Box<dyn SerialPort> {
     let baud_rate = 921_600;
-    serialport::new(port_path, baud_rate)
+    let port = serialport::new(port_path, baud_rate)
         .parity(serialport::Parity::None)
         .stop_bits(serialport::StopBits::One)
-        .open()
-        .expect("Failed to open IO port")
+        .open();
+    match port {
+        Ok(port) => port,
+        Err(e) => {
+            log::error!("{:?} - {}", e.kind, e.description);
+            thread::sleep(Duration::from_millis(100));
+            return connect(port_path);
+        }
+    }
 }
 
 pub fn spawn(
