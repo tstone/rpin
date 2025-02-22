@@ -1,0 +1,9 @@
+[package]
+name = "rpin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+colog = "1.3.0"
+log = "0.4.26"
+serialport = "4.7.0"
