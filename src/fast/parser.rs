@@ -64,6 +64,12 @@ fn parse_to_enum(command: &str, address: Option<String>, args: Vec<&str>) -> Fsp
                 }
             }
         }
+        "-L" => FspResponse::SwitchClosed {
+            id: u32::from_str_radix(args[0], 16).unwrap(),
+        },
+        "/L" => FspResponse::SwitchOpened {
+            id: u32::from_str_radix(args[0], 16).unwrap(),
+        },
         _ => FspResponse::Unknown {
             command: String::from(command),
             address,

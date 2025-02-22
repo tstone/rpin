@@ -29,6 +29,12 @@ pub enum FspResponse {
     WatchdogStaus {
         remaining: Duration,
     },
+    SwitchOpened {
+        id: u32,
+    },
+    SwitchClosed {
+        id: u32,
+    },
     Unknown {
         command: String,
         address: Option<String>,
@@ -48,6 +54,7 @@ pub enum FspRequest {
         platform: FastPlatform,
         switch_reporting: SwitchReporting,
     },
+    GetAllSwitchState,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -70,9 +77,10 @@ pub enum SwitchReporting {
 impl FspRequest {
     pub fn to_string(&self) -> String {
         match self {
-            Self::GetId => String::from("ID:"),
-            Self::GetNodeId => String::from("NI:"),
-            Self::GetNodeInfo => String::from("NN:"),
+            Self::GetId => "ID:".to_string(),
+            Self::GetNodeId => "NI:".to_string(),
+            Self::GetNodeInfo => "NN:".to_string(),
+            Self::GetAllSwitchState => "SA:".to_string(),
             Self::Watchdog { time } => format!("WD:{}", time.as_millis()),
             Self::ConfigureHardware {
                 platform,
