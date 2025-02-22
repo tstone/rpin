@@ -4,6 +4,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
+use super::fsp::FspRequest;
 use super::InternalEvent;
 
 fn connect(port_path: &str) -> Box<dyn SerialPort> {
@@ -18,7 +19,7 @@ fn connect(port_path: &str) -> Box<dyn SerialPort> {
 pub fn spawn(
     io_net_port_path: &'static str,
     main_tx: Sender<InternalEvent>,
-    io_rx: Receiver<String>,
+    io_rx: Receiver<FspRequest>,
 ) {
     thread::spawn(move || {
         log::debug!("Opening serial port at {io_net_port_path}");
@@ -26,8 +27,9 @@ pub fn spawn(
 
         loop {
             // Send outgoing messages (if present from another thread)
-            if let Ok(str) = io_rx.try_recv() {
-                let outbound = format!("{str}\r");
+            if let Ok(req) = io_rx.try_recv() {
+                let msg = req.to_string();
+                let outbound = format!("{msg}\r");
                 log::trace!("Writing {} bytes to {io_net_port_path}", outbound.len());
                 let _ = io_net_port.write(outbound.as_bytes());
             }

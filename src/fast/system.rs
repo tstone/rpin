@@ -3,7 +3,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
-use super::fsp::FspResponse::*;
+use super::fsp::{FspRequest, FspResponse::*};
 use super::{parser, serial};
 
 pub enum InternalEvent {
@@ -20,7 +20,7 @@ impl System {
         let main_tx = tx;
         let main_rx = rx;
 
-        let (tx, rx) = mpsc::channel::<String>();
+        let (tx, rx) = mpsc::channel::<FspRequest>();
         let io_net_tx = tx;
         let io_net_rx = rx;
 
@@ -32,9 +32,9 @@ impl System {
     }
 }
 
-fn wait_for_system_boot(main_rx: &Receiver<InternalEvent>, io_tx: &Sender<String>) {
+fn wait_for_system_boot(main_rx: &Receiver<InternalEvent>, io_tx: &Sender<FspRequest>) {
     loop {
-        let _ = io_tx.send(String::from("ID:"));
+        let _ = io_tx.send(FspRequest::Id);
 
         match main_rx.recv_timeout(Duration::from_millis(100)) {
             Ok(event) => match event {
