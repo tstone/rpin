@@ -5,14 +5,19 @@ use std::time::Duration;
 
 use colorous::Color;
 
-use crate::fast::fsp::{FastExpReq, LEDState};
+use crate::fast::{
+    fsp::{FastExpReq, LEDState},
+    system::InternalEvent,
+};
 
+#[derive(Debug, Clone)]
 pub struct LedId {
     pub expansion_id: String,
-    pub port: u8,
+    pub port: u8, // TODO?
     pub index: u8,
 }
 
+#[derive(Debug, Clone)]
 pub struct LedAnimation {
     // Locations of which LEDs this animation applies to
     pub leds: Vec<LedId>,
@@ -22,7 +27,7 @@ pub struct LedAnimation {
     pub repeat: u16, // 0 = infinite
 }
 
-pub fn run(exp_tx: Sender<FastExpReq>, anim: LedAnimation) {
+pub fn run(exp_tx: Sender<FastExpReq>, main_tx: Sender<InternalEvent>, anim: LedAnimation) {
     let frame_duration = Duration::from_millis(1000 / u64::from(anim.fps));
     thread::spawn(move || {
         let mut run_count = 0;
@@ -58,16 +63,19 @@ pub fn run(exp_tx: Sender<FastExpReq>, anim: LedAnimation) {
                 let _ = exp_tx.send(FastExpReq::SetLEDs { address, states });
             }
 
-            if anim.repeat > 0 {
-                run_count += 1;
-            }
-
             current_frame += 1;
             if current_frame == anim.frames.len() {
                 current_frame = 0;
+                if anim.repeat > 0 {
+                    run_count += 1;
+                }
             }
 
             thread::sleep(frame_duration);
         }
+
+        // TODO: turn off LEDs once done
+
+        let _ = main_tx.send(InternalEvent::LedAnimationComplete);
     });
 }

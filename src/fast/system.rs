@@ -15,6 +15,7 @@ use crate::fast::watchdog;
 pub enum InternalEvent {
     IncomingIoData { raw: String },
     IncomingExpData { raw: String },
+    LedAnimationComplete,
 }
 use InternalEvent::*;
 
@@ -49,20 +50,42 @@ impl System {
 
         log::info!("System online.");
 
-        led::anim::run(
-            exp_tx,
+        let animations = vec![
+            led::linear::generate(
+                Color {
+                    r: 128,
+                    g: 0,
+                    b: 128,
+                },
+                id_builder::linear_alternate("48".to_string(), 0, 8, 0),
+                4,
+                5,
+            ),
             led::linear_gradient::generate(
                 colorous::PLASMA,
-                // Color {
-                //     r: 89,
-                //     g: 50,
-                //     b: 180,
-                // },
-                id_builder::linear("48".to_string(), 0, 8),
-                10,
-                0,
+                id_builder::linear("48".to_string(), 0, 8, 0),
+                8,
+                5,
             ),
-        );
+            led::linear::generate(
+                Color {
+                    r: 0,
+                    g: 128,
+                    b: 128,
+                },
+                id_builder::linear_rev("48".to_string(), 0, 8, 0),
+                20,
+                10,
+            ),
+            led::linear_gradient::generate(
+                colorous::PURPLE_RED,
+                id_builder::linear_alternate("48".to_string(), 0, 8, 0),
+                6,
+                5,
+            ),
+        ];
+        let mut current_anim = 0;
+        led::anim::run(exp_tx.clone(), main_tx.clone(), animations[0].clone());
 
         loop {
             match main_rx.try_recv() {
@@ -70,6 +93,19 @@ impl System {
                 Ok(event) => match event {
                     IncomingIoData { raw } => log::info!("Received IO response: {raw}"),
                     IncomingExpData { raw } => log::info!("Received EXP response: {raw}"),
+                    LedAnimationComplete => {
+                        log::info!("Animation complete");
+                        current_anim += 1;
+                        if current_anim == animations.len() {
+                            current_anim = 0;
+                        }
+
+                        led::anim::run(
+                            exp_tx.clone(),
+                            main_tx.clone(),
+                            animations[current_anim].clone(),
+                        );
+                    }
                 },
             }
             thread::sleep(Duration::from_millis(1));
