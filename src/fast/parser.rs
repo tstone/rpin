@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use super::fsp::FspResponse;
+use super::fsp::FastIoResp;
 
 /// Convert FAST pinball response string into a Message
-pub fn parse(input: String) -> Result<FspResponse, &'static str> {
+pub fn parse(input: String) -> Result<FastIoResp, &'static str> {
     match input.split_once(":") {
         None => Err("Invalid message syntax: Missing command."),
         Some((identity, all_args)) => {
@@ -18,22 +18,22 @@ pub fn parse(input: String) -> Result<FspResponse, &'static str> {
     }
 }
 
-fn parse_to_enum(command: &str, address: Option<String>, args: Vec<&str>) -> FspResponse {
+fn parse_to_enum(command: &str, address: Option<String>, args: Vec<&str>) -> FastIoResp {
     match command {
         "ID" => {
             if args[0] == "F" {
-                FspResponse::IdFailed
+                FastIoResp::IdFailed
             } else {
-                FspResponse::Id {
+                FastIoResp::Id {
                     identity: String::from(args[0]),
                 }
             }
         }
-        "NI" => FspResponse::NodeId {
+        "NI" => FastIoResp::NodeId {
             id: args[0].parse::<u8>().unwrap(), // TODO: is this actually in hex?
             serial: String::from(args[1]),
         },
-        "NN" => FspResponse::NodeInfo {
+        "NN" => FastIoResp::NodeInfo {
             id: args[0].parse::<u8>().unwrap(),
             name: String::from(args[1].trim()),
             firmware: String::from(args[2]),
@@ -42,35 +42,35 @@ fn parse_to_enum(command: &str, address: Option<String>, args: Vec<&str>) -> Fsp
         },
         "WD" => {
             if args[0] == "P" {
-                FspResponse::WatchdogValid
+                FastIoResp::WatchdogValid
             } else if args[0] == "X" || args[0] == "F" {
-                FspResponse::WatchdogInvalid
+                FastIoResp::WatchdogInvalid
             } else {
                 let ms = u64::from_str_radix(args[0], 16).unwrap();
-                FspResponse::WatchdogStaus {
+                FastIoResp::WatchdogStaus {
                     remaining: Duration::from_millis(ms),
                 }
             }
         }
         "CH" => {
             if args[0] == "P" {
-                FspResponse::HardwareConfigValid
+                FastIoResp::HardwareConfigValid
             } else if args[0] == "X" || args[0] == "F" {
-                FspResponse::HardwareConfigInvalid
+                FastIoResp::HardwareConfigInvalid
             } else {
-                FspResponse::HardwareConfig {
+                FastIoResp::HardwareConfig {
                     system: args[0].to_string(),
                     data_flags: args[1].to_string(),
                 }
             }
         }
-        "-L" => FspResponse::SwitchClosed {
+        "-L" => FastIoResp::SwitchClosed {
             id: u32::from_str_radix(args[0], 16).unwrap(),
         },
-        "/L" => FspResponse::SwitchOpened {
+        "/L" => FastIoResp::SwitchOpened {
             id: u32::from_str_radix(args[0], 16).unwrap(),
         },
-        _ => FspResponse::Unknown {
+        _ => FastIoResp::Unknown {
             command: String::from(command),
             address,
         },
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn it_parses_id_commands() {
         match parse("ID:NET 12345".to_string()).unwrap() {
-            FspResponse::Id { identity } => assert_eq!(identity, "NET 12345"),
+            FastIoResp::Id { identity } => assert_eq!(identity, "NET 12345"),
             _ => panic!(),
         }
     }
@@ -111,14 +111,14 @@ mod tests {
     #[test]
     fn it_parses_id_failed_commands() {
         let msg = parse("ID:F".to_string()).unwrap();
-        assert!(matches!(msg, FspResponse::IdFailed));
+        assert!(matches!(msg, FastIoResp::IdFailed));
     }
 
     #[test]
     fn it_parses_node_id_commands() {
         let raw = "NI:01,A6E616CE514C505136202020FF0E141D";
         match parse(raw.to_string()).unwrap() {
-            FspResponse::NodeId { id, serial } => {
+            FastIoResp::NodeId { id, serial } => {
                 assert_eq!(id, 1);
                 assert_eq!(serial, "A6E616CE514C505136202020FF0E141D");
             }
@@ -129,19 +129,19 @@ mod tests {
     #[test]
     fn it_parses_watchdog_valid() {
         let msg = parse("WD:P".to_string()).unwrap();
-        assert!(matches!(msg, FspResponse::WatchdogValid));
+        assert!(matches!(msg, FastIoResp::WatchdogValid));
     }
 
     #[test]
     fn it_parses_watchdog_invalid() {
         let msg = parse("WD:F".to_string()).unwrap();
-        assert!(matches!(msg, FspResponse::WatchdogInvalid));
+        assert!(matches!(msg, FastIoResp::WatchdogInvalid));
     }
 
     #[test]
     fn it_parses_watchdog_status_commands() {
         match parse("WD:000FF839".to_string()).unwrap() {
-            FspResponse::WatchdogStaus { remaining } => {
+            FastIoResp::WatchdogStaus { remaining } => {
                 assert_eq!(remaining.as_millis(), 1046585);
             }
             _ => panic!(),
@@ -153,7 +153,7 @@ mod tests {
         let raw = "NN:01,FP-I/O-1616-2  ,00.89,04,06,10,10,00,00,00,00";
         let result = parse(raw.to_string()).unwrap();
         match result {
-            FspResponse::NodeInfo {
+            FastIoResp::NodeInfo {
                 id,
                 name,
                 firmware,
