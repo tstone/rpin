@@ -1,10 +1,12 @@
+use bevy::utils::HashMap;
+
 use super::{expansion_board::ExpansionBoard, resources::LED};
 
 #[derive(Default, Clone)]
 pub struct Neutron {
     pub(crate) io_port_path: Option<&'static str>,
     pub(crate) exp_port_path: Option<&'static str>,
-    pub(crate) indicators: Vec<LED>,
+    pub(crate) indicators: HashMap<&'static str, LED>,
 }
 
 impl Neutron {
@@ -31,15 +33,18 @@ impl Neutron {
     ) -> Self {
         for (port_index, port) in leds.iter().enumerate() {
             for (index, name) in port.iter().enumerate() {
-                self.indicators.push(LED {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    expansion_address: board.as_str(),
-                    port: port_index as u8,
-                    index: index as u8,
+                self.indicators.insert(
                     name,
-                });
+                    LED {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        expansion_address: board.as_str(),
+                        port: port_index as u8,
+                        index: index as u8,
+                        name,
+                    },
+                );
             }
         }
         self

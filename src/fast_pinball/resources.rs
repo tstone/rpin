@@ -1,4 +1,4 @@
-use bevy::prelude::Resource;
+use bevy::{prelude::Resource, utils::HashMap};
 use serialport::SerialPort;
 use std::sync::{Arc, Mutex};
 
@@ -21,7 +21,7 @@ pub struct LED {
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct Indicators {
-    pub leds: Vec<LED>,
+    pub leds: HashMap<&'static str, LED>,
 }
 
 #[derive(Resource, Debug)]
