@@ -1,20 +1,35 @@
-use fast::{ExpansionBoard, System, SystemConfig};
+use bevy::{log::LogPlugin, prelude::*};
 
-mod fast;
+mod fast_pinball;
+use fast_pinball::{ExpansionBoard, Neutron};
 
 fn main() {
-    colog::basic_builder()
-        .filter_level(log::LevelFilter::Trace)
-        .init();
+    let neutron = Neutron::new()
+        .add_io_net_port("COM5")
+        .add_exp_port("COM7")
+        .add_expansion_board(
+            ExpansionBoard::Neutron,
+            vec![vec!["a", "b", "c", "d", "e", "f", "g", "h"]],
+        );
 
-    System::start(SystemConfig {
-        system: fast::FastPlatform::Neuron,
-        switch_reporting: fast::SwitchReporting::Read,
-        io_port_path: "COM5",
-        exp_port_path: "COM7",
-        expansion_boards: vec![ExpansionBoard {
-            id: "48",
-            leds: vec![8],
-        }],
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins);
+
+    #[cfg(debug_assertions)]
+    app.add_plugins(LogPlugin {
+        filter: "info,wgpu_core=warn,wgpu_hal=warn,bevy_pin=debug,bevy_pin::fast_pinball=trace"
+            .to_string(),
+        level: bevy::log::Level::TRACE,
+        custom_layer: |_| None,
     });
+
+    #[cfg(not(debug_assertions))]
+    app.add_plugins(LogPlugin {
+        filter: "warn".to_string(),
+        level: bevy::log::Level::WARN,
+        custom_layer: |_| None,
+    });
+
+    app.add_plugins(neutron).run();
 }
