@@ -15,6 +15,6 @@ pub fn reset_leds(indicators: Res<Indicators>, mut commands: Commands) {
     }
     for addr in expansion_boards_with_leds.iter() {
         // TODO: make LED brightness configurable
-        commands.set_all_leds(*addr, Hsl::from(200., 100., 20.));
+        commands.set_all_leds(*addr, Hsl::from(0., 0., 0.));
     }
 }

@@ -17,9 +17,10 @@ impl Command for SetLED {
             Some(indicators) => match indicators.leds.get(self.name.as_str()) {
                 Some(led) => {
                     let msg = format!(
-                        "RA@{}{}:{}",
+                        "RS@{}{}:{:0>x}{}",
                         led.expansion_address,
                         led.port,
+                        led.index,
                         self.color.to_hex()
                     );
                     world.send_event(ExpPortData(msg));
