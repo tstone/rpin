@@ -1,7 +1,7 @@
 use bevy::{log::LogPlugin, prelude::*};
 
 mod fast_pinball;
-use fast_pinball::{ExpansionBoard, Neutron};
+use fast_pinball::prelude::*;
 
 fn main() {
     let neutron = Neutron::new()

@@ -77,3 +77,9 @@ impl fmt::Display for ExpansionBoard {
         write!(f, "{}", self.as_str())
     }
 }
+
+impl Into<String> for ExpansionBoard {
+    fn into(self) -> String {
+        self.to_string()
+    }
+}

@@ -1,11 +1,10 @@
-use bevy::{prelude::*, utils::hashbrown::HashSet};
-use colors_transform::Hsl;
+use bevy::prelude::*;
 
 use super::{
     events::{ExpPortData, IoPortData},
     resources::{ExpPort, Indicators, IoNetPort},
     serial::*,
-    FastCommandsExt, Neutron,
+    systems, Neutron,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -67,17 +66,6 @@ impl Plugin for Neutron {
             leds: self.indicators.clone(),
         });
 
-        app.add_systems(Startup, reset_leds);
-    }
-}
-
-/// Set all LEDs to black (off) to clear any prior state
-fn reset_leds(indicators: Res<Indicators>, mut commands: Commands) {
-    let mut expansion_boards_with_leds = HashSet::<&str>::new();
-    for led in &indicators.leds {
-        expansion_boards_with_leds.insert(&led.expansion_address);
-    }
-    for addr in expansion_boards_with_leds.iter() {
-        commands.set_all_leds(*addr, Hsl::from(0., 0., 0.));
+        app.add_systems(Startup, systems::reset_leds);
     }
 }
