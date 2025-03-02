@@ -4,23 +4,28 @@ use super::{expansion_board::ExpansionBoard, resources::LED};
 
 #[derive(Default, Clone)]
 pub struct Neutron {
-    pub(crate) io_port_path: Option<&'static str>,
+    pub(crate) io_port_path: &'static str,
     pub(crate) exp_port_path: Option<&'static str>,
     pub(crate) indicators: HashMap<&'static str, LED>,
+    pub(crate) default_led_brightness: f32,
 }
 
 impl Neutron {
-    pub fn new() -> Self {
-        Neutron::default()
-    }
-
-    pub fn add_io_net_port(mut self, path: &'static str) -> Self {
-        self.io_port_path = Some(path);
-        self
+    pub fn new(io_port_path: &'static str) -> Self {
+        Neutron {
+            io_port_path,
+            default_led_brightness: 50.,
+            ..Neutron::default()
+        }
     }
 
     pub fn add_exp_port(mut self, path: &'static str) -> Self {
         self.exp_port_path = Some(path);
+        self
+    }
+
+    pub fn default_led_brightness(mut self, value: f32) -> Self {
+        self.default_led_brightness = value;
         self
     }
 
@@ -33,6 +38,10 @@ impl Neutron {
     ) -> Self {
         for (port_index, port) in leds.iter().enumerate() {
             for (index, name) in port.iter().enumerate() {
+                if self.indicators.contains_key(name) {
+                    panic!("LED names must be unique. Found duplicate for '{}'", name);
+                }
+
                 self.indicators.insert(
                     name,
                     LED {

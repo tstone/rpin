@@ -4,8 +4,7 @@ mod fast_pinball;
 use fast_pinball::prelude::*;
 
 fn main() {
-    let neutron = Neutron::new()
-        .add_io_net_port("COM5")
+    let neutron = Neutron::new("COM5")
         .add_exp_port("COM7")
         .add_expansion_board(
             ExpansionBoard::Neutron,

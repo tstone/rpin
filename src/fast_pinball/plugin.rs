@@ -15,7 +15,7 @@ use std::{
 impl Plugin for Neutron {
     fn build(&self, app: &mut bevy::app::App) {
         // IO/NET port
-        let mut io_port = connect(self.io_port_path.unwrap());
+        let mut io_port = connect(self.io_port_path);
 
         // Wait for Neutron to boot up
         loop {
