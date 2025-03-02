@@ -5,6 +5,10 @@ use fast_pinball::prelude::*;
 
 fn main() {
     let neutron = Neutron::new("COM5")
+        .add_io_board(&IoBoard::Fast3208 {
+            switches: vec![Some("sw1"), Some("sw2")],
+            coils: vec![],
+        })
         .add_exp_port("COM7")
         .add_expansion_board(
             ExpansionBoard::Neutron,

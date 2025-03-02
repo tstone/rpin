@@ -45,6 +45,7 @@ impl Plugin for Neutron {
 
         // TODO: confgiure drivers
         // TODO: configure switches
+        // TODO: watchdog
 
         let mutex = Mutex::new(io_port);
         app.insert_resource(IoNetPort(Arc::new(mutex)));

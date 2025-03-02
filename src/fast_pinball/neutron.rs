@@ -1,12 +1,20 @@
 use bevy::utils::HashMap;
 
-use super::{expansion_board::ExpansionBoard, resources::LED};
+use super::{
+    expansion_board::ExpansionBoard,
+    resources::{Coil, Switch, LED},
+    IoBoard,
+};
 
 #[derive(Default, Clone)]
 pub struct Neutron {
     pub(crate) io_port_path: &'static str,
     pub(crate) exp_port_path: Option<&'static str>,
     pub(crate) indicators: HashMap<&'static str, LED>,
+    pub(crate) switch_count: u32,
+    pub(crate) coil_count: u32,
+    pub(crate) switches: HashMap<&'static str, Switch>,
+    pub(crate) coils: HashMap<&'static str, Coil>,
     pub(crate) default_led_brightness: f32,
 }
 
@@ -14,6 +22,8 @@ impl Neutron {
     pub fn new(io_port_path: &'static str) -> Self {
         Neutron {
             io_port_path,
+            switch_count: 0,
+            coil_count: 0,
             default_led_brightness: 50.,
             ..Neutron::default()
         }
@@ -56,6 +66,41 @@ impl Neutron {
                 );
             }
         }
+        self
+    }
+
+    pub fn add_io_board(mut self, board: &IoBoard) -> Self {
+        let (switches, coils) = match board {
+            IoBoard::Fast3208 { switches, coils } => (switches, coils),
+            IoBoard::Fast1616 { switches, coils } => (switches, coils),
+            IoBoard::Fast0804 { switches, coils } => (switches, coils),
+            IoBoard::CabinetIO { switches, coils } => (switches, coils),
+        };
+
+        // add switches
+        for (index, switch) in switches.iter().enumerate() {
+            match switch {
+                Some(name) => {
+                    let id = format!("{:0>x}", self.switch_count + index as u32);
+                    self.switches.insert(name, Switch { id, name });
+                }
+                None => {}
+            }
+        }
+
+        // add coils
+        for (index, switch) in coils.iter().enumerate() {
+            match switch {
+                Some(name) => {
+                    let id = format!("{:0>x}", self.coil_count + index as u32);
+                    self.coils.insert(name, Coil { id, name });
+                }
+                None => {}
+            }
+        }
+
+        self.switch_count += board.switch_port_count() as u32;
+        self.coil_count += board.coil_port_count() as u32;
         self
     }
 }

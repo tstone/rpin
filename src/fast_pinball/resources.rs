@@ -18,10 +18,39 @@ pub struct LED {
     pub index: u8,
 }
 
+/// Configuration for a single switch
+/// See: https://fastpinball.com/modern/switches/
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+pub struct Switch {
+    pub id: String,
+    // A short human readable description of this LED, e.g. "left ramp"
+    pub name: &'static str,
+}
+
+/// Configuration for a single switch
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+pub struct Coil {
+    pub id: String,
+    // A short human readable description of this LED, e.g. "left ramp"
+    pub name: &'static str,
+}
+
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct Indicators {
     pub leds: HashMap<&'static str, LED>,
+}
+
+#[derive(Resource, Debug)]
+#[allow(dead_code)]
+pub struct Switches {
+    pub switches: HashMap<&'static str, Switch>,
+}
+
+#[derive(Resource, Debug)]
+#[allow(dead_code)]
+pub struct Coils {
+    pub coils: HashMap<&'static str, Coil>,
 }
 
 #[derive(Resource, Debug)]
