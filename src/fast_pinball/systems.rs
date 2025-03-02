@@ -10,7 +10,7 @@ use super::FastCommandsExt;
 /// Set all LEDs to off to clear any prior state
 pub fn reset_leds(indicators: Res<Indicators>, mut commands: Commands) {
     let mut expansion_boards_with_leds = HashSet::<&str>::new();
-    for led in indicators.leds.values() {
+    for led in indicators.by_name.values() {
         expansion_boards_with_leds.insert(&led.expansion_address);
     }
     for addr in expansion_boards_with_leds.iter() {

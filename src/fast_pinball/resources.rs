@@ -38,19 +38,21 @@ pub struct Coil {
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct Indicators {
-    pub leds: HashMap<&'static str, LED>,
+    pub by_name: HashMap<&'static str, LED>,
 }
 
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct Switches {
-    pub switches: HashMap<&'static str, Switch>,
+    pub by_name: HashMap<&'static str, Switch>,
+    pub by_id: HashMap<String, Switch>,
 }
 
 #[derive(Resource, Debug)]
 #[allow(dead_code)]
 pub struct Coils {
-    pub coils: HashMap<&'static str, Coil>,
+    pub by_name: HashMap<&'static str, Coil>,
+    pub by_id: HashMap<String, Coil>,
 }
 
 #[derive(Resource, Debug)]

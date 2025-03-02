@@ -1,8 +1,8 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 
 use super::{
     events::{ExpPortData, IoPortData},
-    resources::{ExpPort, Indicators, IoNetPort},
+    resources::{Coil, Coils, ExpPort, Indicators, IoNetPort, Switch, Switches},
     serial::*,
     systems, Neutron,
 };
@@ -43,8 +43,6 @@ impl Plugin for Neutron {
             }
         }
 
-        // TODO: confgiure drivers
-        // TODO: configure switches
         // TODO: watchdog
 
         let mutex = Mutex::new(io_port);
@@ -64,7 +62,27 @@ impl Plugin for Neutron {
         }
 
         app.insert_resource(Indicators {
-            leds: self.indicators.clone(),
+            by_name: self.indicators.clone(),
+        });
+
+        let mut switches_by_id = HashMap::<String, Switch>::new();
+        for switch in self.switches.values() {
+            switches_by_id.insert(switch.id.clone(), switch.clone());
+        }
+
+        app.insert_resource(Switches {
+            by_name: self.switches.clone(),
+            by_id: switches_by_id,
+        });
+
+        let mut coils_by_id = HashMap::<String, Coil>::new();
+        for coil in self.coils.values() {
+            coils_by_id.insert(coil.id.clone(), coil.clone());
+        }
+
+        app.insert_resource(Coils {
+            by_name: self.coils.clone(),
+            by_id: coils_by_id,
         });
 
         app.add_systems(Startup, systems::reset_leds);

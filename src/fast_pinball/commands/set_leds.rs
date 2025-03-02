@@ -14,7 +14,7 @@ pub struct SetLED {
 impl Command for SetLED {
     fn apply(self, world: &mut bevy::ecs::world::World) {
         match world.get_resource::<Indicators>() {
-            Some(indicators) => match indicators.leds.get(self.name.as_str()) {
+            Some(indicators) => match indicators.by_name.get(self.name.as_str()) {
                 Some(led) => {
                     let msg = format!(
                         "RS@{}{}:{:0>x}{}",
