@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::hashbrown::HashMap};
 
 use super::{
-    events::{ExpPortData, IoPortData},
+    events::{ExpPortData, FastIoEvent, IoPortData},
     resources::{Coil, Coils, ExpPort, Indicators, IoNetPort, Switch, Switches},
     serial::*,
     systems, Neutron,
@@ -48,6 +48,7 @@ impl Plugin for Neutron {
         let mutex = Mutex::new(io_port);
         app.insert_resource(IoNetPort(Arc::new(mutex)));
         app.add_event::<IoPortData>();
+        app.add_event::<FastIoEvent>();
         app.add_systems(FixedUpdate, io_read);
         app.add_systems(FixedUpdate, io_write);
 
