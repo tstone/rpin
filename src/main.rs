@@ -21,7 +21,10 @@ fn main() {
         }))
         .add_systems(Startup, spawn_fake_cabinet_hardware)
         .add_plugins(PinballBase)
-        .add_plugins(PaymentPlugin::default())
+        .add_plugins(PaymentPlugin {
+            required_credits: 2,
+            ..Default::default()
+        })
         .add_plugins(PinballDebugLogger)
         .add_plugins(SwitchEmulator(HashMap::from([(
             KeyCode::Enter,

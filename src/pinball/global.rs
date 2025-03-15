@@ -1,6 +1,16 @@
 use bevy::color::Srgba;
 use bevy::prelude::*;
 
+// -- States --
+#[derive(States, Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MachineState {
+    #[default]
+    Idle,
+    Attract,
+    CreditsDeposited,
+    InGame,
+}
+
 // -- Lighting --
 
 #[derive(Debug, Clone, PartialEq, Default, Component)]

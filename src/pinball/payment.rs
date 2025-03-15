@@ -1,10 +1,27 @@
 use bevy::prelude::*;
 
-use super::{CabinetButtons, CabinetSwitches, SwitchInput, SwitchState};
+use super::{CabinetButtons, CabinetSwitches, MachineState, SwitchInput, SwitchState};
 
-/// A plugin that handles non-game machine operation:
-/// - Encforcing payment
-/// - Keeping track of how many paid players there are
+/// PaymentPlugin - A plugin that handles the payment mechanics.
+///
+/// # Outputs
+///
+/// ## Resources
+/// - `PlayerPayments` - Config around payment and how many players have been added
+///
+/// ## State: AddPlayerState
+/// - `NotAcceptingPlayers`
+/// - `AcceptingPlayers` - (default)
+/// - `MaxPlayers` - Maximum players reached
+///
+/// ## State: PaymentState
+/// - `InsufficientCredits` - (default) for non-freeplay
+/// - `SufficientCredits` - (default) when in freeplay
+///
+/// ## Events
+/// - `PlayerAdded` - Fired whenever a player is added
+/// - `CreditAdded` - Fired whenever a credit is added
+/// - `MaxCreditAdded` - Fired if the machine is at max credits but another credit was added
 #[derive(Debug, Clone)]
 pub struct PaymentPlugin {
     /// 0 is free play
@@ -36,14 +53,14 @@ impl Plugin for PaymentPlugin {
         app.add_event::<MaxCreditAdded>();
         app.add_event::<PlayerAdded>();
 
+        app.init_state::<AddPlayerState>();
+
         // if in freeplay mode start with sufficient credits
         if self.required_credits == 0 {
             app.insert_state(PaymentState::SufficientCredits);
         } else {
             app.insert_state(PaymentState::InsufficientCredits);
         }
-
-        app.init_state::<AddPlayerState>();
 
         app.add_systems(
             Update,
@@ -52,8 +69,13 @@ impl Plugin for PaymentPlugin {
 
         app.add_systems(
             Update,
-             add_player.run_if(in_state(AddPlayerState::AcceptingPlayers)),
+            add_player.run_if(
+                in_state(AddPlayerState::AcceptingPlayers)
+                    .and(in_state(PaymentState::SufficientCredits)),
+            ),
         );
+
+        app.add_systems(OnExit(MachineState::InGame), reset_payments);
     }
 }
 
@@ -91,12 +113,7 @@ fn add_player(
     mut player_state: ResMut<NextState<AddPlayerState>>,
 ) {
     for ev in ev_cab_switch.read() {
-        if ev.id == CabinetButtons::StartButton 
-            && ev.state == SwitchState::Closed
-            // verify there are enough credits and we haven't reached max players
-            && payment.current_credits >= payment.credits_required
-            && payment.paid_players < payment.max_players
-        {
+        if ev.id == CabinetButtons::StartButton && ev.state == SwitchState::Closed {
             payment.current_credits -= payment.credits_required;
             payment.paid_players += 1;
             ev_player_added.send(PlayerAdded);
@@ -114,6 +131,10 @@ fn add_player(
             }
         }
     }
+}
+
+fn reset_payments(mut payment: ResMut<PlayerPayments>) {
+    payment.paid_players = 0;
 }
 
 /// A state which indicates if there are or aren't sufficient credits
