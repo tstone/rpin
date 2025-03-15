@@ -5,6 +5,7 @@ use bevy::{
 };
 
 mod fast_pinball;
+mod godzilla;
 use colors_transform::Hsl;
 use fast_pinball::{prelude::*, FastIoEvent};
 
@@ -44,6 +45,9 @@ fn main() {
     app.add_systems(Update, fake_switch_input);
     app.add_systems(Update, led_indicator);
 
+    // godzilla
+    app.init_state::<godzilla::Tanks>();
+
     app.run();
 }
 
@@ -62,6 +66,7 @@ fn led_indicator(mut ev_io: EventReader<FastIoEvent>, mut commands: Commands) {
     }
 }
 
+// TODO: make this some kind of nifty plugin that can be added
 fn fake_switch_input(keys: Res<ButtonInput<KeyCode>>, mut ev_io: EventWriter<FastIoEvent>) {
     if keys.just_pressed(KeyCode::KeyA) {
         ev_io.send(FastIoEvent::SwitchClosed {
