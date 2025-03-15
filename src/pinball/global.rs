@@ -1,41 +1,69 @@
 use bevy::color::Srgba;
 use bevy::prelude::*;
 
-// -- General Components --
+// -- Lighting --
 
 #[derive(Debug, Clone, PartialEq, Default, Component)]
-pub struct RgbIndicator {
-    pub id: u16,
+pub struct RgbIndicator<T: Clone + Default> {
+    pub id: T,
     pub enabled: bool,
     pub color: Srgba,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Component)]
-pub struct Switch {
-    pub id: u16,
-    pub closed: bool,
+pub struct Indicator<T: Clone> {
+    pub id: T,
+    pub enabled: bool,
 }
 
-// -- Specific Components --
+// -- Switches --
 
-#[derive(Component)]
-#[require(Switch)]
-pub struct StartButton {}
+#[derive(Event, Debug, Clone)]
+pub struct SwitchInput<T: Clone> {
+    pub id: T,
+    pub state: SwitchState,
+}
 
-#[derive(Component)]
-#[require(Switch)]
-pub struct AddCreditSwitch {}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SwitchState {
+    Closed,
+    Open,
+}
 
-// -- Events --
+#[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CabinetButtons {
+    LeftFlipper,
+    LeftMagnasave,
+    RightFlipper,
+    RightMagnasave,
+    ActionButton,
+    #[default]
+    StartButton,
+    ContinueButton,
+}
 
-#[derive(Event)]
-pub struct SwitchClosed(u16);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CabinetSwitches {
+    AddCoin,
+}
 
-#[derive(Event)]
-pub struct SwitchOpened(u16);
-
-#[derive(Event)]
-pub struct PinballButtonDown(u16);
-
-#[derive(Event)]
-pub struct PinballButtonUp(u16);
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LowerThirdsSwitches {
+    LeftOutlane,
+    LeftInlane,
+    RightOutlane,
+    RightInlane,
+    Trough1,
+    Trough2,
+    Trough3,
+    Trough4,
+    Trough5,
+    Trough6,
+    Trough7,
+    Trough8,
+    PlungerLane,
+    LeftSlingUpper,
+    LeftSlingLower,
+    RightSlingUpper,
+    RightSlingLower,
+}

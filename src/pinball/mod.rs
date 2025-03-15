@@ -1,8 +1,8 @@
-pub mod debug;
+mod base;
+pub mod dev_tools;
 mod global;
-pub mod keyboard;
 pub mod payment;
 
-pub use debug::DebugLogger;
+pub use base::PinballBase;
 pub use global::*;
 pub use payment::PaymentPlugin;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::{AddCreditSwitch, StartButton, Switch};
+use super::{CabinetButtons, CabinetSwitches, SwitchInput, SwitchState};
 
 /// A plugin that handles non-game machine operation:
 /// - Encforcing payment
@@ -32,24 +32,50 @@ impl Plugin for PaymentPlugin {
             ..Default::default()
         });
 
+        app.add_event::<CreditAdded>();
+        app.add_event::<MaxCreditAdded>();
+        app.add_event::<PlayerAdded>();
+
+        // if in freeplay mode start with sufficient credits
+        if self.required_credits == 0 {
+            app.insert_state(PaymentState::SufficientCredits);
+        } else {
+            app.insert_state(PaymentState::InsufficientCredits);
+        }
+
+        app.init_state::<AddPlayerState>();
+
         app.add_systems(
-            FixedUpdate,
-            (accept_payment, add_player).run_if(in_state(PlayerOpenness::PlayersCanBeAdded)),
+            Update,
+            accept_payment.run_if(in_state(AddPlayerState::AcceptingPlayers).and(payment_required)),
+        );
+
+        app.add_systems(
+            Update,
+             add_player.run_if(in_state(AddPlayerState::AcceptingPlayers)),
         );
     }
 }
 
+fn payment_required(payment: Res<PlayerPayments>) -> bool {
+    payment.credits_required > 0
+}
+
 fn accept_payment(
-    query: Query<&Switch, (With<AddCreditSwitch>, Changed<Switch>)>,
     mut payment: ResMut<PlayerPayments>,
+    mut ev_cab_switch: EventReader<SwitchInput<CabinetSwitches>>,
     mut ev_credit_added: EventWriter<CreditAdded>,
     mut ev_max_credits: EventWriter<MaxCreditAdded>,
+    mut payment_state: ResMut<NextState<PaymentState>>,
 ) {
-    for switch in &query {
-        if switch.closed {
+    for ev in ev_cab_switch.read() {
+        if ev.state == SwitchState::Closed && ev.id == CabinetSwitches::AddCoin {
             if payment.current_credits < payment.max_credits {
                 payment.current_credits += 1;
                 ev_credit_added.send(CreditAdded);
+                if payment.current_credits >= payment.credits_required {
+                    payment_state.set(PaymentState::SufficientCredits);
+                }
             } else {
                 ev_max_credits.send(MaxCreditAdded);
             }
@@ -58,30 +84,53 @@ fn accept_payment(
 }
 
 fn add_player(
-    query: Query<&Switch, (With<StartButton>, Changed<Switch>)>,
-    mut players: ResMut<PlayerPayments>,
+    mut ev_cab_switch: EventReader<SwitchInput<CabinetButtons>>,
+    mut payment: ResMut<PlayerPayments>,
     mut ev_player_added: EventWriter<PlayerAdded>,
+    mut payment_state: ResMut<NextState<PaymentState>>,
+    mut player_state: ResMut<NextState<AddPlayerState>>,
 ) {
-    // verify there are enough credits and we haven't reached max players
-    if players.current_credits >= players.credits_required
-        && players.paid_players < players.max_players
-    {
-        for button in &query {
-            if button.closed {
-                players.current_credits -= players.credits_required;
-                players.paid_players += 1;
-                ev_player_added.send(PlayerAdded);
+    for ev in ev_cab_switch.read() {
+        if ev.id == CabinetButtons::StartButton 
+            && ev.state == SwitchState::Closed
+            // verify there are enough credits and we haven't reached max players
+            && payment.current_credits >= payment.credits_required
+            && payment.paid_players < payment.max_players
+        {
+            payment.current_credits -= payment.credits_required;
+            payment.paid_players += 1;
+            ev_player_added.send(PlayerAdded);
+
+            if payment.paid_players == payment.max_players {
+                player_state.set(AddPlayerState::MaxPlayers);
+            }
+
+            if payment.credits_required > 0 {
+                if payment.current_credits >= payment.credits_required {
+                    payment_state.set(PaymentState::SufficientCredits);
+                } else {
+                    payment_state.set(PaymentState::InsufficientCredits);
+                }
             }
         }
     }
 }
 
-/// A state which defines if the machine is willing to accept additional players or not
+/// A state which indicates if there are or aren't sufficient credits
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
-pub enum PlayerOpenness {
+pub enum PaymentState {
     #[default]
-    PlayersCanBeAdded,
-    PlayersCannotBeAdded,
+    InsufficientCredits,
+    SufficientCredits,
+}
+
+/// A state which indicates if there are or aren't sufficient credits
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub enum AddPlayerState {
+    NotAcceptingPlayers,
+    #[default]
+    AcceptingPlayers,
+    MaxPlayers,
 }
 
 #[derive(Resource, Debug, Clone, PartialEq, Eq, Default)]
