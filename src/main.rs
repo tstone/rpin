@@ -4,7 +4,8 @@ use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use fast::Neutron;
+use examples::godzilla::playfield::PlayfieldIndicators;
+use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
 use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
 use pinball::*;
 
@@ -20,6 +21,22 @@ fn main() {
         ..Default::default()
     }))
     .add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
+    .add_plugins(ExpansionLeds(vec![
+        LedDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            id: PlayfieldIndicators::LeftSpinner,
+            row: 2,
+            col: 0,
+        },
+        LedDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            id: PlayfieldIndicators::LeftRamp,
+            row: 4,
+            col: 0,
+        },
+    ]))
     .add_plugins(PinballBase)
     .add_plugins(PaymentPlugin::default());
 
@@ -34,5 +51,27 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
+    app.add_systems(Update, test_startup);
     app.run();
+}
+
+fn test_startup(
+    mut query: Query<&mut RgbIndicator<PlayfieldIndicators>>,
+    mut ev: EventReader<SwitchInput<CabinetButtons>>,
+) {
+    for e in ev.read() {
+        if e.id == CabinetButtons::StartButton {
+            let color = if e.state == SwitchState::Closed {
+                Hsla::hsl(0.5, 0.5, 0.5)
+            } else {
+                Hsla::hsl(0., 0., 0.)
+            };
+
+            for mut led in &mut query {
+                if led.id == PlayfieldIndicators::LeftSpinner {
+                    led.color = color;
+                }
+            }
+        }
+    }
 }

@@ -9,38 +9,32 @@ use super::{
     ExpansionBoard,
 };
 
-pub struct ExpansionLedPort<K: Copy + Eq + Hash + Send + Sync + 'static> {
-    board: ExpansionBoard,
-    port: u8,
-    leds: Vec<LedDefinition<K>>,
-}
+pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LedDefinition<K>>);
 
-impl<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin
-    for ExpansionLedPort<K>
-{
+impl<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLeds<K> {
     fn build(&self, app: &mut App) {
         let mut mapping: HashMap<K, Vec<HardwareLed>> = HashMap::new();
-        let addr = self.board.as_str();
 
-        for (index, def) in self.leds.iter().enumerate() {
+        for (index, def) in self.0.iter().enumerate() {
+            let addr = def.board.as_str();
             let led = HardwareLed {
                 expansion_address: addr,
-                port: self.port,
+                port: def.port,
                 index: index as u8,
             };
-            match mapping.get_mut(&def.key) {
+            match mapping.get_mut(&def.id) {
                 Some(vec) => vec.push(led),
                 None => {
-                    mapping.insert(def.key, vec![led]);
+                    mapping.insert(def.id, vec![led]);
                 }
             }
 
             // spawn indicator entities
             app.world_mut().spawn((
-                def.key,
+                def.id,
                 RgbIndicator {
                     color: Hsla::hsl(0., 0., 0.),
-                    id: def.key,
+                    id: def.id,
                     row: def.row,
                     col: def.col,
                 },
@@ -57,7 +51,7 @@ fn led_change_listener<K: Component + Debug + Copy + Eq + Hash + Send + Sync + '
     mapping: Res<HardwareLedMapping<K>>,
     mut ev: EventWriter<ExpPortData>,
 ) {
-    for indicator in &query {
+    for indicator in query.iter() {
         match mapping.0.get(&indicator.id) {
             Some(leds) => {
                 for led in leds {
@@ -76,11 +70,15 @@ fn led_change_listener<K: Component + Debug + Copy + Eq + Hash + Send + Sync + '
     }
 }
 
+// TODO: add some kind of "reset LEDs on shutdown" system
+
 #[derive(Debug, Default, Clone)]
 pub struct LedDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
-    key: K,
-    row: u16,
-    col: u16,
+    pub id: K,
+    pub row: u16,
+    pub col: u16,
+    pub board: ExpansionBoard,
+    pub port: u8,
 }
 
 fn hsl_to_hex(color: Hsla) -> String {

@@ -1,3 +1,6 @@
+use bevy::ecs::component::Component;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlayfieldIndicators {
     LeftSpinner,
     LeftRamp,
@@ -6,6 +9,7 @@ pub enum PlayfieldIndicators {
     RightLane,
 }
 
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlayfieldSwitches {
     MaserCanon,
     LeftSpinnerGate,

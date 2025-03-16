@@ -101,7 +101,6 @@ impl Plugin for Neutron {
         });
 
         app.add_systems(Startup, event_listener);
-        app.add_systems(OnEnter(MachineState::Waiting), reset_leds);
     }
 }
 
@@ -110,8 +109,4 @@ impl Plugin for Neutron {
 struct NeutronConfig {
     pub default_led_brightness: f32,
     pub expansion_boards: Vec<ExpansionBoard>,
-}
-
-fn reset_leds() {
-    todo!()
 }
