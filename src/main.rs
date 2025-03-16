@@ -25,6 +25,7 @@ fn main() {
         LedDefinition {
             board: ExpansionBoard::Neutron,
             port: 0,
+            index: 0,
             id: PlayfieldIndicators::LeftSpinner,
             row: 2,
             col: 0,
@@ -32,6 +33,7 @@ fn main() {
         LedDefinition {
             board: ExpansionBoard::Neutron,
             port: 0,
+            index: 1,
             id: PlayfieldIndicators::LeftRamp,
             row: 4,
             col: 0,

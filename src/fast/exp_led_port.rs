@@ -11,16 +11,16 @@ use super::{
 
 pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LedDefinition<K>>);
 
-impl<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLeds<K> {
+impl<K: Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLeds<K> {
     fn build(&self, app: &mut App) {
         let mut mapping: HashMap<K, Vec<HardwareLed>> = HashMap::new();
 
-        for (index, def) in self.0.iter().enumerate() {
+        for def in self.0.iter() {
             let addr = def.board.as_str();
             let led = HardwareLed {
                 expansion_address: addr,
                 port: def.port,
-                index: index as u8,
+                index: def.index,
             };
             match mapping.get_mut(&def.id) {
                 Some(vec) => vec.push(led),
@@ -30,15 +30,12 @@ impl<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for
             }
 
             // spawn indicator entities
-            app.world_mut().spawn((
-                def.id,
-                RgbIndicator {
-                    color: Hsla::hsl(0., 0., 0.),
-                    id: def.id,
-                    row: def.row,
-                    col: def.col,
-                },
-            ));
+            app.world_mut().spawn((RgbIndicator {
+                color: Hsla::hsl(0., 0., 0.),
+                id: def.id,
+                row: def.row,
+                col: def.col,
+            },));
         }
 
         app.insert_resource(HardwareLedMapping(mapping));
@@ -46,7 +43,7 @@ impl<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for
     }
 }
 
-fn led_change_listener<K: Component + Debug + Copy + Eq + Hash + Send + Sync + 'static>(
+fn led_change_listener<K: Debug + Copy + Eq + Hash + Send + Sync + 'static>(
     query: Query<&RgbIndicator<K>, Changed<RgbIndicator<K>>>,
     mapping: Res<HardwareLedMapping<K>>,
     mut ev: EventWriter<ExpPortData>,
@@ -75,10 +72,11 @@ fn led_change_listener<K: Component + Debug + Copy + Eq + Hash + Send + Sync + '
 #[derive(Debug, Default, Clone)]
 pub struct LedDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
     pub id: K,
-    pub row: u16,
-    pub col: u16,
     pub board: ExpansionBoard,
     pub port: u8,
+    pub index: u8,
+    pub row: u16,
+    pub col: u16,
 }
 
 fn hsl_to_hex(color: Hsla) -> String {

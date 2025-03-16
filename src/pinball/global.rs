@@ -13,7 +13,7 @@ pub enum MachineState {
 
 // -- Lighting --
 
-#[derive(Debug, Clone, PartialEq, Default, Component)]
+#[derive(Component, Debug, Clone, PartialEq, Default)]
 pub struct RgbIndicator<T: Copy + Eq + Hash + Send + Sync + 'static> {
     pub id: T,
     pub color: Hsla,
@@ -21,7 +21,7 @@ pub struct RgbIndicator<T: Copy + Eq + Hash + Send + Sync + 'static> {
     pub col: u16,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Component)]
+#[derive(Component, Debug, Clone, PartialEq, Default)]
 pub struct Indicator<T: Copy + Eq + Hash + Send + Sync + 'static> {
     pub id: T,
     pub enabled: bool,
