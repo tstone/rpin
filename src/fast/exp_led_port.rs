@@ -48,23 +48,27 @@ fn led_change_listener<K: Debug + Copy + Eq + Hash + Send + Sync + 'static>(
     mapping: Res<HardwareLedMapping<K>>,
     mut ev: EventWriter<ExpPortData>,
 ) {
-    for indicator in query.iter() {
+    for indicator in &query {
         match mapping.0.get(&indicator.id) {
             Some(leds) => {
                 for led in leds {
-                    let msg = format!(
-                        "RS@{}{}:{}{}",
-                        led.expansion_address,
-                        led.port,
-                        led.index,
-                        hsl_to_hex(indicator.color),
-                    );
-                    ev.send(ExpPortData(msg));
+                    let data = led_color_event(led, indicator.color);
+                    ev.send(data);
                 }
             }
             None => error!("Indicator {:?} is not mapped to hardware", indicator.id),
         }
     }
+}
+
+fn led_color_event(led: &HardwareLed, color: Hsla) -> ExpPortData {
+    ExpPortData(format!(
+        "RS@{}{}:{}{}",
+        led.expansion_address,
+        led.port,
+        led.index,
+        hsl_to_hex(color),
+    ))
 }
 
 // TODO: add some kind of "reset LEDs on shutdown" system

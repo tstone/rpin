@@ -53,27 +53,5 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
-    app.add_systems(Update, test_startup);
     app.run();
-}
-
-fn test_startup(
-    mut query: Query<&mut RgbIndicator<PlayfieldIndicators>>,
-    mut ev: EventReader<SwitchInput<CabinetButtons>>,
-) {
-    for e in ev.read() {
-        if e.id == CabinetButtons::StartButton {
-            let color = if e.state == SwitchState::Closed {
-                Hsla::hsl(0.5, 0.5, 0.5)
-            } else {
-                Hsla::hsl(0., 0., 0.)
-            };
-
-            for mut led in &mut query {
-                if led.id == PlayfieldIndicators::LeftSpinner {
-                    led.color = color;
-                }
-            }
-        }
-    }
 }
