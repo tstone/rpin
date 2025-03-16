@@ -75,7 +75,7 @@ impl Plugin for PaymentPlugin {
             ),
         );
 
-        app.add_systems(OnExit(MachineState::InGame), reset_payments);
+        app.add_systems(OnExit(MachineState::InGame), reset);
     }
 }
 
@@ -133,7 +133,7 @@ fn add_player(
     }
 }
 
-fn reset_payments(mut payment: ResMut<PlayerPayments>) {
+fn reset(mut payment: ResMut<PlayerPayments>) {
     payment.paid_players = 0;
 }
 

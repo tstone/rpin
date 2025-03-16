@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 use crate::pinball::{CabinetButtons, Indicator, RgbIndicator};
 
+#[allow(dead_code)]
 pub fn spawn_fake_cabinet_hardware(mut commands: Commands) {
     commands.spawn((
         CabinetButtons::StartButton,

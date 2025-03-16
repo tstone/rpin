@@ -4,12 +4,12 @@ use bevy::{
     log::{Level, LogPlugin},
     prelude::*,
 };
-use pinball::{
-    dev_tools::{fake::spawn_fake_cabinet_hardware, keyboard::SwitchEmulator, PinballDebugLogger},
-    CabinetButtons, CabinetSwitches, PaymentPlugin, PinballBase,
-};
+use fast::Neutron;
+use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
+use pinball::*;
 
-mod fast_pinball;
+mod examples;
+mod fast;
 mod pinball;
 
 fn main() {
@@ -19,7 +19,7 @@ fn main() {
         level: Level::DEBUG,
         ..Default::default()
     }))
-    .add_systems(Startup, spawn_fake_cabinet_hardware)
+    .add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
     .add_plugins(PinballBase)
     .add_plugins(PaymentPlugin::default());
 

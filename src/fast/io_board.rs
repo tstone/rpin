@@ -1,4 +1,5 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
+#[allow(dead_code)]
 pub enum IoBoard {
     Fast3208 {
         switches: Vec<Option<&'static str>>,
@@ -18,6 +19,7 @@ pub enum IoBoard {
     },
 }
 
+#[allow(dead_code)]
 impl IoBoard {
     /// Gets the total number of drivers this board can support
     pub fn coil_port_count(&self) -> u8 {

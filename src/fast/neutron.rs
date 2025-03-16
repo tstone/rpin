@@ -1,16 +1,48 @@
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::prelude::*;
+
+use crate::pinball::MachineState;
 
 use super::{
-    events::{ExpPortData, FastIoEvent, IoPortData},
-    resources::{Coil, Coils, ExpPort, Indicators, IoNetPort, Switch, Switches},
+    events::{event_listener, ExpPortData, FastIoEvent, IoPortData},
+    resources::{ExpPort, IoNetPort},
     serial::*,
-    systems, Neutron,
+    ExpansionBoard,
 };
 use std::{
     sync::{Arc, Mutex},
     thread,
     time::Duration,
 };
+
+/// Neutron - Bevy plugin which connects to the Fast Pinball Neutron board
+#[derive(Default, Clone)]
+pub struct Neutron {
+    pub(crate) io_port_path: &'static str,
+    pub(crate) exp_port_path: Option<&'static str>,
+    pub(crate) default_led_brightness: f32,
+}
+
+impl Neutron {
+    pub fn new(io_port_path: &'static str) -> Self {
+        Neutron {
+            io_port_path,
+            default_led_brightness: 50.,
+            ..Neutron::default()
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn add_exp_port(mut self, path: &'static str) -> Self {
+        self.exp_port_path = Some(path);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn default_led_brightness(mut self, value: f32) -> Self {
+        self.default_led_brightness = value;
+        self
+    }
+}
 
 impl Plugin for Neutron {
     fn build(&self, app: &mut bevy::app::App) {
@@ -62,30 +94,24 @@ impl Plugin for Neutron {
             app.add_systems(FixedUpdate, exp_write);
         }
 
-        app.insert_resource(Indicators {
-            by_name: self.indicators.clone(),
+        app.insert_resource(NeutronConfig {
+            default_led_brightness: self.default_led_brightness,
+            expansion_boards: Vec::new(),
+            ..Default::default()
         });
 
-        let mut switches_by_id = HashMap::<String, Switch>::new();
-        for switch in self.switches.values() {
-            switches_by_id.insert(switch.id.clone(), switch.clone());
-        }
-
-        app.insert_resource(Switches {
-            by_name: self.switches.clone(),
-            by_id: switches_by_id,
-        });
-
-        let mut coils_by_id = HashMap::<String, Coil>::new();
-        for coil in self.coils.values() {
-            coils_by_id.insert(coil.id.clone(), coil.clone());
-        }
-
-        app.insert_resource(Coils {
-            by_name: self.coils.clone(),
-            by_id: coils_by_id,
-        });
-
-        app.add_systems(Startup, systems::reset_leds);
+        app.add_systems(Startup, event_listener);
+        app.add_systems(OnEnter(MachineState::Waiting), reset_leds);
     }
+}
+
+#[derive(Resource, Debug, Clone, Default)]
+#[allow(dead_code)]
+struct NeutronConfig {
+    pub default_led_brightness: f32,
+    pub expansion_boards: Vec<ExpansionBoard>,
+}
+
+fn reset_leds() {
+    todo!()
 }

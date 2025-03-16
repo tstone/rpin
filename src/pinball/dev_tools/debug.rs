@@ -11,6 +11,7 @@ use crate::pinball::{
 
 /// A plugin which prints logs for pinball events
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PinballDebugLogger;
 
 impl Plugin for PinballDebugLogger {

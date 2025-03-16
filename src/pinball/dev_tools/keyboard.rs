@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::pinball::{SwitchInput, SwitchState};
 
+#[allow(dead_code)]
 pub struct SwitchEmulator<T: Copy + Eq + Hash + Send + Sync + 'static>(pub HashMap<KeyCode, T>);
 
 impl<T: Copy + Eq + Hash + Send + Sync + 'static> Plugin for SwitchEmulator<T> {
