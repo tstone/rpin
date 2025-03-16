@@ -56,18 +56,20 @@ pub enum CabinetButtons {
     ContinueButton,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CabinetSwitches {
+    #[default]
     AddCoin,
 }
 
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[allow(dead_code)]
 pub enum LowerThirdsSwitches {
     LeftOutlane,
     LeftInlane,
     RightOutlane,
     RightInlane,
+    #[default]
     Trough1,
     Trough2,
     Trough3,
