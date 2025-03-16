@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// See: https://fastpinball.com/programming/exp/#expansion-board-addresses
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[allow(dead_code)]
 pub enum ExpansionBoard {
     Neutron,
@@ -13,7 +13,7 @@ pub enum ExpansionBoard {
 impl ExpansionBoard {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Self::Neutron => "48",
+            Self::Neutron { .. } => "48",
             Self::FpExp0071 {
                 jumper_0: false,
                 jumper_1: false,

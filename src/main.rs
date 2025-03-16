@@ -1,87 +1,57 @@
+use std::collections::HashMap;
+
 use bevy::{
-    input::{keyboard::KeyboardInput, InputPlugin},
-    log::LogPlugin,
+    log::{Level, LogPlugin},
     prelude::*,
 };
+use examples::godzilla::playfield::PlayfieldIndicators;
+use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
+use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
+use pinball::*;
 
-mod fast_pinball;
-mod godzilla;
-use colors_transform::Hsl;
-use fast_pinball::{prelude::*, FastIoEvent};
+mod examples;
+mod fast;
+mod pinball;
 
 fn main() {
-    let neutron = Neutron::new("COM5")
-        .add_io_board(&IoBoard::Fast3208 {
-            switches: vec![Some("sw1"), Some("sw2")],
-            coils: vec![],
-        })
-        .add_exp_port("COM7")
-        .add_expansion_board(
-            ExpansionBoard::Neutron,
-            vec![vec!["a", "b", "c", "d", "e", "f", "g", "h"]],
-        );
-
     let mut app = App::new();
+    app.add_plugins(DefaultPlugins.set(LogPlugin {
+        filter: "info,wgpu_core=warn,wgpu_hal=warn,bevy_pin::pinball=debug".to_string(),
+        level: Level::DEBUG,
+        ..Default::default()
+    }))
+    .add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
+    .add_plugins(ExpansionLeds(vec![
+        LedDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            index: 0,
+            id: PlayfieldIndicators::LeftSpinner,
+            row: 2,
+            col: 0,
+        },
+        LedDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            index: 1,
+            id: PlayfieldIndicators::LeftRamp,
+            row: 4,
+            col: 0,
+        },
+    ]))
+    .add_plugins(PinballBase)
+    .add_plugins(PaymentPlugin::default());
 
-    app.add_plugins(DefaultPlugins);
-
-    // #[cfg(debug_assertions)]
-    // app.add_plugins(LogPlugin {
-    //     filter: "info,wgpu_core=warn,wgpu_hal=warn,bevy_pin=debug,bevy_pin::fast_pinball=trace"
-    //         .to_string(),
-    //     level: bevy::log::Level::TRACE,
-    //     custom_layer: |_| None,
-    // });
-
-    // #[cfg(not(debug_assertions))]
-    // app.add_plugins(LogPlugin {
-    //     filter: "warn".to_string(),
-    //     level: bevy::log::Level::WARN,
-    //     custom_layer: |_| None,
-    // });
-
-    app.add_plugins(neutron);
-    app.add_systems(Update, keyboard_events);
-    app.add_systems(Update, fake_switch_input);
-    app.add_systems(Update, led_indicator);
-
-    // godzilla
-    app.init_state::<godzilla::Tanks>();
+    #[cfg(debug_assertions)]
+    app.add_plugins(PinballDebugLogger)
+        .add_plugins(SwitchEmulator(HashMap::from([(
+            KeyCode::Enter,
+            CabinetButtons::StartButton,
+        )])))
+        .add_plugins(SwitchEmulator(HashMap::from([(
+            KeyCode::Comma,
+            CabinetSwitches::AddCoin,
+        )])));
 
     app.run();
-}
-
-fn led_indicator(mut ev_io: EventReader<FastIoEvent>, mut commands: Commands) {
-    for event in ev_io.read() {
-        println!("{:?}", event);
-        match event {
-            FastIoEvent::SwitchClosed { id } if id == "00" => {
-                commands.set_led("a", Hsl::from(200., 100., 20.))
-            }
-            FastIoEvent::SwitchOpened { id } if id == "00" => {
-                commands.set_led("a", Hsl::from(0., 0., 0.))
-            }
-            _ => {}
-        }
-    }
-}
-
-// TODO: make this some kind of nifty plugin that can be added
-fn fake_switch_input(keys: Res<ButtonInput<KeyCode>>, mut ev_io: EventWriter<FastIoEvent>) {
-    if keys.just_pressed(KeyCode::KeyA) {
-        ev_io.send(FastIoEvent::SwitchClosed {
-            id: "00".to_string(),
-        });
-    }
-    if keys.just_released(KeyCode::KeyA) {
-        ev_io.send(FastIoEvent::SwitchOpened {
-            id: "00".to_string(),
-        });
-    }
-}
-
-fn keyboard_events(mut evr_kbd: EventReader<KeyboardInput>) {
-    for ev in evr_kbd.read() {
-        println!("{ev:?}");
-    }
 }
