@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use examples::godzilla::playfield::PlayfieldIndicators;
-use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
+use fast::{ExpansionBoard, ExpansionLeds, LEDDefinition, Neutron};
 use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
 use pinball::*;
 
@@ -22,7 +22,7 @@ fn main() {
     }))
     .add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
     .add_plugins(ExpansionLeds(vec![
-        LedDefinition {
+        LEDDefinition {
             board: ExpansionBoard::Neutron,
             port: 0,
             index: 0,
@@ -30,7 +30,7 @@ fn main() {
             row: 2,
             col: 0,
         },
-        LedDefinition {
+        LEDDefinition {
             board: ExpansionBoard::Neutron,
             port: 0,
             index: 1,

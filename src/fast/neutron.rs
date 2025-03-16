@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
-use crate::pinball::MachineState;
-
 use super::{
-    events::{event_listener, ExpPortData, FastIoEvent, IoPortData},
+    parser::FastIoEvent,
     resources::{ExpPort, IoNetPort},
     serial::*,
     ExpansionBoard,
@@ -79,19 +77,15 @@ impl Plugin for Neutron {
 
         let mutex = Mutex::new(io_port);
         app.insert_resource(IoNetPort(Arc::new(mutex)));
-        app.add_event::<IoPortData>();
         app.add_event::<FastIoEvent>();
         app.add_systems(FixedUpdate, io_read);
-        app.add_systems(FixedUpdate, io_write);
 
         // Expansion port
         if let Some(port_path) = self.exp_port_path {
             let exp_path = connect(port_path);
             let mutex = Mutex::new(exp_path);
             app.insert_resource(ExpPort(Arc::new(mutex)));
-            app.add_event::<ExpPortData>();
             app.add_systems(FixedUpdate, exp_read);
-            app.add_systems(FixedUpdate, exp_write);
         }
 
         app.insert_resource(NeutronConfig {
@@ -99,8 +93,6 @@ impl Plugin for Neutron {
             expansion_boards: Vec::new(),
             ..Default::default()
         });
-
-        app.add_systems(Startup, event_listener);
     }
 }
 
