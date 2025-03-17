@@ -1,6 +1,5 @@
 use std::hash::Hash;
 
-use bevy::color::Hsla;
 use bevy::prelude::*;
 
 /// Identity - Something that is identifiable, e.g. an LED or servo
@@ -19,7 +18,7 @@ pub struct Position {
 /// Colored -- Something which can have it's color set, like an RGB LED
 #[derive(Component, Debug, Clone, PartialEq, Default)]
 pub struct Colored {
-    pub color: Hsla,
+    pub color: Color,
 }
 
 /// Enabled -- Something which can be enabled or disabled, like an indicator

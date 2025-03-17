@@ -1,12 +1,15 @@
-use bevy::color::Hsla;
+use bevy::color::palettes;
+use bevy::color::Color;
 use bevy::prelude::*;
 
-static BLACK: Hsla = Hsla::hsl(0., 0., 0.);
+static BLACK: Color = Color::hsl(0., 0., 0.);
+
+// pub fn sequential() -> Vec<Vec<Color>> {}
 
 /// A frame generator which moves a list of colors linearly through
 /// all LEDs. One frame will be generated for each combination of colors.
-pub fn generate(led_count: u16, colors: Vec<Hsla>) -> Vec<Vec<Hsla>> {
-    let mut frames: Vec<Vec<Hsla>> = Vec::new();
+pub fn sequential_linear(led_count: u16, colors: Vec<Color>) -> Vec<Vec<Color>> {
+    let mut frames: Vec<Vec<Color>> = Vec::new();
     let mut colors = colors.clone();
 
     // Insert black (blank) if not enough colors were given
@@ -17,7 +20,7 @@ pub fn generate(led_count: u16, colors: Vec<Hsla>) -> Vec<Vec<Hsla>> {
 
     let max_color_index = colors.len() - 1;
     for offset in (0..colors.len()).rev() {
-        let mut frame: Vec<Hsla> = Vec::new();
+        let mut frame: Vec<Color> = Vec::new();
         for i in 0..led_count {
             let color_index = wrap(i as usize + offset, max_color_index);
             frame.push(colors[color_index].clone());
@@ -25,18 +28,11 @@ pub fn generate(led_count: u16, colors: Vec<Hsla>) -> Vec<Vec<Hsla>> {
         frames.push(frame);
     }
 
-    info!("frames: {:?}", frames);
-
     // move the last frame to the front which just presents more natural
     frames.insert(0, frames[frames.len() - 1].clone());
     frames.pop();
 
     frames
-}
-
-/// A frame generator that moves a single color linearly
-pub fn generate_single(led_count: u16, color: Hsla) -> Vec<Vec<Hsla>> {
-    generate(led_count, vec![color])
 }
 
 fn wrap(value: usize, max: usize) -> usize {
@@ -50,11 +46,11 @@ fn wrap(value: usize, max: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    static RED: Hsla = Hsla::hsl(360., 1., 1.);
+    static RED: Color = Color::hsl(360., 1., 1.);
 
     #[test]
     fn it_generates_single() {
-        let frames = generate_single(3, RED);
+        let frames = sequential_linear(3, vec![RED]);
         println!("frames: {:?}", frames);
 
         assert_eq!(frames[0][0], RED);

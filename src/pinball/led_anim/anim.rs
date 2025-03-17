@@ -5,13 +5,13 @@ use bevy::prelude::*;
 #[derive(Component, Debug, Clone)]
 pub struct LEDAnimation {
     pub led_indexes: HashMap<Entity, usize>,
-    pub frames: Vec<Vec<Hsla>>,
+    pub frames: Vec<Vec<Color>>,
     /// None = infinite, Some = repeat given count then stop
     pub repeat: Option<u8>,
     pub timer: Timer,
     pub current_frame: usize,
     pub end_behavior: EndBehavior,
-    pub previous_colors: Vec<Hsla>,
+    pub previous_colors: Vec<Color>,
 }
 
 impl LEDAnimation {
@@ -19,7 +19,7 @@ impl LEDAnimation {
         fps: u8,
         repeat: Option<u8>,
         leds: Vec<Entity>,
-        frames: Vec<Vec<Hsla>>,
+        frames: Vec<Vec<Color>>,
         end_behavior: EndBehavior,
     ) -> Self {
         // Each color of the frame index matches the LED index

@@ -57,13 +57,13 @@ app.add_plugins(ExpansionLeds(vec![
 
 Adding the `ExpansionLeds` plugin adds an entity per LED with the following components: `Identity`, `Colored`, `Position`, `FastLED`.
 
-Now,, to set the color of an LED it's simply to set `colored.color = Hsla::hsl(0.5, 0.5, 1.0);` The plugin will handle sending the appropriate command to the Neutron.
+Now,, to set the color of an LED it's simply to set `colored.color = Color::hsl(0.5, 0.5, 1.0);` The plugin will handle sending the appropriate command to the Neutron.
 
 ```rust
 fn set_color(query: Query<&Identity, &Colored>) {
     let left_spinner_led = query.iter().find(|(identity, _)|{ identity.id == PlayfieldIndicators::LeftSpinner });
     match left_spinner_led {
-        Some((_, colored)) => colored.color = Hsla::hsl(0.5, 0.5, 1.0),
+        Some((_, colored)) => colored.color = Color::hsl(0.5, 0.5, 1.0),
         _ => ()
     }
 }

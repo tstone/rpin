@@ -55,8 +55,8 @@ fn main() {
 fn basic_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
     let entities = query.iter().take(2).collect::<Vec<_>>();
     let frames = vec![
-        vec![Hsla::hsl(180., 1.0, 0.35), Hsla::hsl(360., 1.0, 0.35)],
-        vec![Hsla::hsl(360., 1.0, 0.35), Hsla::hsl(180., 1.0, 0.35)],
+        vec![Color::hsl(180., 1.0, 0.35), Color::hsl(360., 1.0, 0.35)],
+        vec![Color::hsl(360., 1.0, 0.35), Color::hsl(180., 1.0, 0.35)],
     ];
     commands.spawn(LEDAnimation::new(
         5,
@@ -69,7 +69,7 @@ fn basic_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
 
 fn linear_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
     let entities = query.iter().take(5).collect::<Vec<_>>();
-    let frames = frame_builder::linear::generate_single(5, Hsla::hsl(150., 1.0, 0.25));
+    let frames = frame_builder::sequential_linear(5, vec![Color::hsl(150., 1.0, 0.25)]);
     commands.spawn(LEDAnimation::new(
         10,
         Some(5),

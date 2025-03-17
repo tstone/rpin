@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css::BLACK, prelude::*};
 
 use crate::pinball::{Colored, EndBehavior};
 
@@ -30,7 +30,7 @@ fn on_add_anim(
                     .keys()
                     .map(|led| match leds.get(*led) {
                         Ok((_, colored)) => colored.color.clone(),
-                        _ => Hsla::hsl(0., 0., 0.),
+                        _ => Color::from(BLACK),
                     })
                     .collect::<Vec<_>>();
             }
@@ -54,7 +54,7 @@ fn on_remove_anim(
             let blacks = anim
                 .led_indexes
                 .iter()
-                .map(|_| Hsla::hsl(0., 0., 0.))
+                .map(|_| Color::hsl(0., 0., 0.))
                 .collect::<Vec<_>>();
             apply_colors(&blacks, anim, &mut leds);
         }
@@ -104,7 +104,7 @@ fn apply_current_frame(anim: &LEDAnimation, led_query: &mut Query<(Entity, &mut 
 }
 
 fn apply_colors(
-    colors: &Vec<Hsla>,
+    colors: &Vec<Color>,
     anim: &LEDAnimation,
     led_query: &mut Query<(Entity, &mut Colored)>,
 ) {

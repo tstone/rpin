@@ -14,7 +14,7 @@ impl<K: Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLe
             app.world_mut().spawn((
                 Identity { id: definition.id },
                 Colored {
-                    color: Hsla::hsl(0., 0., 0.),
+                    color: Color::hsl(0., 0., 0.),
                 },
                 Position {
                     row: definition.row,
@@ -42,7 +42,7 @@ fn led_change_listener(
     }
 }
 
-fn led_color_event(led: &FastLED, color: Hsla) -> String {
+fn led_color_event(led: &FastLED, color: Color) -> String {
     format!(
         "RS@{}{}:{}{}",
         led.expansion_address,
@@ -74,7 +74,7 @@ pub struct LEDDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
     pub col: u16,
 }
 
-fn hsl_to_hex(color: Hsla) -> String {
+fn hsl_to_hex(color: Color) -> String {
     let rgb = Srgba::from(color);
     format!(
         "{:0>2x}{:0>2x}{:0>2x}",
@@ -90,13 +90,13 @@ mod tests {
 
     #[test]
     fn it_converts_single_digits() {
-        let hex = hsl_to_hex(Hsla::hsl(1., 1., 0.1));
+        let hex = hsl_to_hex(Color::hsl(1., 1., 0.1));
         assert_eq!(hex, "320000".to_string());
     }
 
     #[test]
     fn it_makes_white() {
-        let hex = hsl_to_hex(Hsla::hsl(1., 1., 1.));
+        let hex = hsl_to_hex(Color::hsl(1., 1., 1.));
         assert_eq!(hex, "ffffff".to_string());
     }
 }

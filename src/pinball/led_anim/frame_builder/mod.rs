@@ -1,1 +1,3 @@
-pub mod linear;
+mod seq;
+
+pub use seq::*;
