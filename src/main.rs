@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::{
+    color::palettes::basic::AQUA,
     log::{Level, LogPlugin},
     prelude::*,
 };
@@ -69,7 +70,7 @@ fn basic_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
 
 fn linear_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
     let entities = query.iter().take(5).collect::<Vec<_>>();
-    let frames = frame_builder::sequential_linear(5, vec![Color::hsl(150., 1.0, 0.25)]);
+    let frames = frame_builder::sequential_linear(5, vec![Color::from(AQUA)]);
     commands.spawn(LEDAnimation::new(
         10,
         Some(5),
