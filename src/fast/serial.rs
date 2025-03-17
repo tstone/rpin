@@ -4,8 +4,10 @@ use std::time::Duration;
 
 use serialport::SerialPort;
 
-use super::events::{ExpPortData, IoPortData};
+use crate::fast::parser::parse;
+
 use super::resources::{ExpPort, IoNetPort};
+use super::FastIoEvent;
 
 pub fn connect(port_path: &str) -> Box<dyn SerialPort> {
     let baud_rate = 921_600;
@@ -23,46 +25,45 @@ pub fn connect(port_path: &str) -> Box<dyn SerialPort> {
     }
 }
 
-pub fn io_read(port: ResMut<IoNetPort>, mut ev_io_data: EventWriter<IoPortData>) {
+pub fn io_read(port: ResMut<IoNetPort>, mut ev_io: EventWriter<FastIoEvent>) {
     let mut io_net_port = port.0.lock().unwrap();
     let mut buffer: String = String::new();
     let _ = io_net_port.read_to_string(&mut buffer);
     if buffer.len() > 0 {
         trace!("Read {} bytes from IO/NET: {buffer}", buffer.len());
-        ev_io_data.send(IoPortData(buffer));
-    }
-}
-
-pub fn io_write(port: ResMut<IoNetPort>, mut ev_io_data: EventReader<IoPortData>) {
-    if !ev_io_data.is_empty() {
-        let mut io_net_port = port.0.lock().unwrap();
-        for event in ev_io_data.read() {
-            match io_net_port.write(format!("{}\r", event.0).as_bytes()) {
-                Ok(_) => trace!("Wrote to IO/NET: {}", event.0),
-                Err(e) => error!("{:?}", e),
+        match parse(buffer) {
+            Ok(event) => {
+                ev_io.send(event);
             }
+            Err(e) => error!("{e}"),
         }
     }
 }
 
-pub fn exp_read(port: ResMut<ExpPort>, mut ev_exp_data: EventWriter<ExpPortData>) {
+#[allow(dead_code)]
+pub fn io_write(data: String, port: &ResMut<IoNetPort>) {
+    let mut io_net_port = port.0.lock().unwrap();
+    match io_net_port.write(format!("{}\r", data).as_bytes()) {
+        Ok(_) => trace!("Wrote to IO/NET: {}", data),
+        Err(e) => error!("{:?}", e),
+    }
+}
+
+pub fn exp_read(port: ResMut<ExpPort>) {
     let mut exp_port = port.0.lock().unwrap();
     let mut buffer: String = String::new();
     let _ = exp_port.read_to_string(&mut buffer);
     if buffer.len() > 0 {
         trace!("Read {} bytes from EXP: {buffer}", buffer.len());
-        ev_exp_data.send(ExpPortData(buffer));
+        // TODO: right now there doesn't seem to be any use for data back from EXP bus
+        // so until there is this just logs it out
     }
 }
 
-pub fn exp_write(port: ResMut<ExpPort>, mut ev_exp_data: EventReader<ExpPortData>) {
-    if !ev_exp_data.is_empty() {
-        let mut exp_port = port.0.lock().unwrap();
-        for event in ev_exp_data.read() {
-            match exp_port.write(format!("{}\r", event.0).as_bytes()) {
-                Ok(_) => trace!("Wrote to EXP: {}", event.0),
-                Err(e) => error!("{:?}", e),
-            }
-        }
+pub fn exp_write(data: String, port: &ResMut<ExpPort>) {
+    let mut exp_port = port.0.lock().unwrap();
+    match exp_port.write(format!("{}\r", data).as_bytes()) {
+        Ok(_) => trace!("Wrote to EXP: {}", data),
+        Err(e) => error!("{:?}", e),
     }
 }

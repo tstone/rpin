@@ -1,80 +1,71 @@
 use bevy::prelude::*;
-use std::{collections::HashMap, fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash};
 
-use crate::pinball::RgbIndicator;
+use crate::pinball::{Colored, Identity, Position};
 
-use super::{
-    events::ExpPortData,
-    resources::{HardwareLed, HardwareLedMapping},
-    ExpansionBoard,
-};
+use super::{resources::ExpPort, serial::exp_write, ExpansionBoard};
 
-pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LedDefinition<K>>);
+pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LEDDefinition<K>>);
 
 impl<K: Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLeds<K> {
     fn build(&self, app: &mut App) {
-        let mut mapping: HashMap<K, Vec<HardwareLed>> = HashMap::new();
-
-        for def in self.0.iter() {
-            let addr = def.board.as_str();
-            let led = HardwareLed {
-                expansion_address: addr,
-                port: def.port,
-                index: def.index,
-            };
-            match mapping.get_mut(&def.id) {
-                Some(vec) => vec.push(led),
-                None => {
-                    mapping.insert(def.id, vec![led]);
-                }
-            }
-
-            // spawn indicator entities
-            app.world_mut().spawn((RgbIndicator {
-                color: Hsla::hsl(0., 0., 0.),
-                id: def.id,
-                row: def.row,
-                col: def.col,
-            },));
+        for definition in self.0.iter() {
+            // spawn entities for LEDs
+            app.world_mut().spawn((
+                Identity { id: definition.id },
+                Colored {
+                    color: Hsla::hsl(0., 0., 0.),
+                },
+                Position {
+                    row: definition.row,
+                    col: definition.col,
+                },
+                FastLED {
+                    expansion_address: definition.board.as_str(),
+                    port: definition.port,
+                    index: definition.index,
+                },
+            ));
         }
 
-        app.insert_resource(HardwareLedMapping(mapping));
-        app.add_systems(Update, led_change_listener::<K>);
+        app.add_systems(Update, led_change_listener);
     }
 }
 
-fn led_change_listener<K: Debug + Copy + Eq + Hash + Send + Sync + 'static>(
-    query: Query<&RgbIndicator<K>, Changed<RgbIndicator<K>>>,
-    mapping: Res<HardwareLedMapping<K>>,
-    mut ev: EventWriter<ExpPortData>,
+fn led_change_listener(
+    query: Query<(&Colored, &FastLED), Changed<Colored>>,
+    port: ResMut<ExpPort>,
 ) {
-    for indicator in &query {
-        match mapping.0.get(&indicator.id) {
-            Some(leds) => {
-                for led in leds {
-                    let data = led_color_event(led, indicator.color);
-                    ev.send(data);
-                }
-            }
-            None => error!("Indicator {:?} is not mapped to hardware", indicator.id),
-        }
+    for (indicator, led) in &query {
+        let data = led_color_event(led, indicator.color);
+        exp_write(data, &port);
     }
 }
 
-fn led_color_event(led: &HardwareLed, color: Hsla) -> ExpPortData {
-    ExpPortData(format!(
+fn led_color_event(led: &FastLED, color: Hsla) -> String {
+    format!(
         "RS@{}{}:{}{}",
         led.expansion_address,
         led.port,
         led.index,
         hsl_to_hex(color),
-    ))
+    )
 }
 
-// TODO: add some kind of "reset LEDs on shutdown" system
+/// FastLED -- Component which adds FAST EXP address information
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub struct FastLED {
+    pub expansion_address: &'static str,
+    /// Port on expansion board
+    pub port: u8,
+    /// Index of LED on port
+    pub index: u8,
+}
 
+/// Configuration for a single LED
+/// See: https://fastpinball.com/programming/exp/#expansion-board-addresses
 #[derive(Debug, Default, Clone)]
-pub struct LedDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
+pub struct LEDDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
     pub id: K,
     pub board: ExpansionBoard,
     pub port: u8,

@@ -1,29 +1,9 @@
 use bevy::prelude::*;
 
-#[derive(Event)]
-pub struct IoPortData(pub String);
-
-#[derive(Event)]
-pub struct ExpPortData(pub String);
-
 #[derive(Event, Debug, Clone, PartialEq, Eq)]
 pub enum FastIoEvent {
     SwitchOpened { id: String },
     SwitchClosed { id: String },
-}
-
-pub fn event_listener(
-    mut ev_port_data: EventReader<IoPortData>,
-    mut ev_io: EventWriter<FastIoEvent>,
-) {
-    for event in ev_port_data.read() {
-        match parse(event.0.clone()) {
-            Ok(event) => {
-                ev_io.send(event);
-            }
-            Err(e) => error!("{e}"),
-        }
-    }
 }
 
 /// Convert FAST pinball response string into a Message
