@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.15.3", features = ["bevy_dev_tools"] }
-colors-transform = "0.2.11"
 serialport = "4.7.0"
 
 # Enable a small amount of optimization in the dev profile.
