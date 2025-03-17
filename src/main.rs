@@ -16,8 +16,8 @@ mod pinball;
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(LogPlugin {
-        filter: "info,wgpu_core=warn,wgpu_hal=warn,bevy_pin::pinball=debug".to_string(),
-        level: Level::DEBUG,
+        filter: "info,wgpu_core=warn,wgpu_hal=warn,bevy_pin::pinball=trace".to_string(),
+        level: Level::TRACE,
         ..Default::default()
     }))
     .add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
@@ -40,7 +40,8 @@ fn main() {
         },
     ]))
     .add_plugins(PinballBase)
-    .add_plugins(PaymentPlugin::default());
+    .add_plugins(PaymentPlugin::default())
+    .add_plugins(LedAnimationPlugin);
 
     #[cfg(debug_assertions)]
     app.add_plugins(PinballDebugLogger)
@@ -53,5 +54,21 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
+    app.add_systems(Startup, test_led_anim);
     app.run();
+}
+
+fn test_led_anim(mut commands: Commands, query: Query<Entity, With<Colored>>) {
+    let entities = query.iter().take(2).collect::<Vec<_>>();
+    let frames = vec![
+        vec![Hsla::hsl(180., 1.0, 0.35), Hsla::hsl(360., 1.0, 0.35)],
+        vec![Hsla::hsl(360., 1.0, 0.35), Hsla::hsl(180., 1.0, 0.35)],
+    ];
+    commands.spawn(LEDAnimation::new(
+        5,
+        Some(5),
+        entities,
+        frames,
+        EndBehavior::Black,
+    ));
 }
