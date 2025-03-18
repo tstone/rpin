@@ -116,11 +116,11 @@ fn fancy_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
 
 fn breathing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
     let entities = query.iter().take(1).collect::<Vec<_>>();
-    let color = Color::from(RED);
+    let color = Color::from(PURPLE);
 
     let anim = LedAnimationSequence::new()
         .once(
-            Duration::from_millis(500),
+            Duration::from_millis(100),
             EaseBrightness {
                 color,
                 easing: Easing {
@@ -130,20 +130,20 @@ fn breathing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
                 },
             },
         )
-        .once(Duration::from_secs(1), Solid { color })
+        .once(Duration::from_millis(500), Solid { color })
         .once(
-            Duration::from_millis(500),
+            Duration::from_millis(1000),
             EaseBrightness {
                 color,
                 easing: Easing {
                     from: Hsla::from(color).lightness,
                     to: 0.,
-                    easefn: EaseFunction::CubicOut,
+                    easefn: EaseFunction::Elastic(50.),
                 },
             },
         )
         .once(
-            Duration::from_secs(1),
+            Duration::from_millis(200),
             Solid {
                 color: Color::from(BLACK),
             },
