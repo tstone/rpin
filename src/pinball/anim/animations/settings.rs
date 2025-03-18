@@ -65,6 +65,8 @@ pub struct AnimationSettings {
     pub ease_out: Option<EaseFunction>,
 }
 
+
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Easing<T> {
     pub from: T,

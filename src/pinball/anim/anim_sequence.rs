@@ -41,7 +41,7 @@ impl LedAnimationSequence {
         let mut frames: LedFrameSet = Vec::new();
         for (dur, anim) in self.pairs {
             let frame_count = calculate_frames(fps, dur);
-            frames.append(&mut anim.render(entities.len() as u16, frame_count));
+            frames.append(&mut anim.render(entities.len() as u16, frame_count, fps));
         }
         LedAnimationPlayback::new(entities, fps, frames, Some(0))
     }
@@ -50,7 +50,7 @@ impl LedAnimationSequence {
         let mut frames: LedFrameSet = Vec::new();
         for (dur, anim) in self.pairs {
             let frame_count = calculate_frames(fps, dur);
-            frames.append(&mut anim.render(entities.len() as u16, frame_count));
+            frames.append(&mut anim.render(entities.len() as u16, frame_count, fps));
         }
         LedAnimationPlayback::new(entities, fps, frames, None)
     }
@@ -64,7 +64,7 @@ impl LedAnimationSequence {
         let mut frames: LedFrameSet = Vec::new();
         for (dur, anim) in self.pairs {
             let frame_count = calculate_frames(fps, dur);
-            frames.append(&mut anim.render(entities.len() as u16, frame_count));
+            frames.append(&mut anim.render(entities.len() as u16, frame_count, fps));
         }
         LedAnimationPlayback::new(entities, fps, frames, repeat)
     }

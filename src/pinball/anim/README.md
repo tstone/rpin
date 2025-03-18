@@ -40,14 +40,6 @@ fn manual_playback(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
 
 While this low level creation of frames is the simplest, it's not the most convinient. Instead, this plugin introduces the `LedAnimation` trait.
 
-```rust
-pub type LedFrameSet = Vec<Vec<Color>>;
-
-pub trait LedAnimation {
-    fn render(&self, led_count: u16, frame_count: u64) -> LedFrameSet;
-}
-```
-
 This allows a description of an animation to be built up which can then be rendered into an animation playback. Let's start by making an animation that fades up a single LED over 2 seconds.
 
 ```rust

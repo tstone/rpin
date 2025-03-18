@@ -1,10 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use bevy::{
-    color::palettes::{
-        basic::AQUA,
-        css::{BLACK, BLUE, PURPLE, RED},
-    },
+    color::palettes::css::*,
     log::{Level, LogPlugin},
     prelude::*,
 };
@@ -51,104 +48,19 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
-    app.add_systems(Startup, breathing);
+    app.add_systems(Startup, flashing);
     app.run();
 }
 
-fn low_level_anim(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(2).collect::<Vec<_>>();
-    let frames = vec![
-        vec![Color::hsl(180., 1.0, 0.35), Color::hsl(360., 1.0, 0.35)],
-        vec![Color::hsl(360., 1.0, 0.35), Color::hsl(180., 1.0, 0.35)],
-    ];
-    commands.spawn(LedAnimationPlayback::new(entities, 5, frames, None));
-}
+fn flashing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+    let entities = query.iter().take(1).collect::<Vec<_>>();
+    let color = Color::from(BLUE_VIOLET);
 
-fn single_color(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(7).collect::<Vec<_>>();
-    let anim = Solid {
-        color: Color::from(AQUA),
+    let anim = Flash {
+        color,
+        hz: 100.,
+        ..Default::default()
     };
-    commands.spawn(anim.to_fixed_playback(1, Duration::from_secs(3), entities, 1));
-}
 
-fn single_color_for_time(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(7).collect::<Vec<_>>();
-    let anim = LedAnimationSequence::new()
-        .once(
-            Duration::from_secs(1),
-            Solid {
-                color: Color::from(PURPLE),
-            },
-        )
-        .clear()
-        .to_fixed_playback(entities, 2, None);
-
-    commands.spawn(anim);
-}
-
-fn fancy_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(1).collect::<Vec<_>>();
-    let anim = LedAnimationSequence::new()
-        .once(
-            Duration::from_secs(2),
-            Solid {
-                color: Color::from(BLUE),
-            },
-        )
-        .once(
-            Duration::from_secs(2),
-            Solid {
-                color: Color::from(PURPLE),
-            },
-        )
-        .once(
-            Duration::from_secs(2),
-            Solid {
-                color: Color::from(RED),
-            },
-        )
-        .clear()
-        .to_fixed_playback(entities, 2, None);
-
-    commands.spawn(anim);
-}
-
-fn breathing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(1).collect::<Vec<_>>();
-    let color = Color::from(PURPLE);
-
-    let anim = LedAnimationSequence::new()
-        .once(
-            Duration::from_millis(100),
-            EaseBrightness {
-                color,
-                easing: Easing {
-                    from: 0.,
-                    to: Hsla::from(color).lightness,
-                    easefn: EaseFunction::CubicIn,
-                },
-            },
-        )
-        .once(Duration::from_millis(500), Solid { color })
-        .once(
-            Duration::from_millis(1000),
-            EaseBrightness {
-                color,
-                easing: Easing {
-                    from: Hsla::from(color).lightness,
-                    to: 0.,
-                    easefn: EaseFunction::Elastic(50.),
-                },
-            },
-        )
-        .once(
-            Duration::from_millis(200),
-            Solid {
-                color: Color::from(BLACK),
-            },
-        )
-        .to_fixed_playback(entities, 24, None);
-
-    commands.spawn(anim);
+    commands.spawn(anim.to_one_shot(Duration::from_secs(1), entities, 24));
 }
