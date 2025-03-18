@@ -29,6 +29,24 @@ impl AnimationDuration {
             },
         }
     }
+
+    pub fn secs(ms: u64, fps: u8) -> Self {
+        Self::Duration {
+            length: Duration::from_secs(ms),
+            fps,
+        }
+    }
+
+    pub fn millis(ms: u64, fps: u8) -> Self {
+        Self::Duration {
+            length: Duration::from_millis(ms),
+            fps,
+        }
+    }
+
+    pub fn frames(count: u64) -> Self {
+        Self::Frames(count)
+    }
 }
 
 impl Default for AnimationDuration {

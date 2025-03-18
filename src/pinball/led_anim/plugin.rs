@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::pinball::RgbLed;
 
-use super::anim::LedAnimation;
+use super::playback::LedAnimationPlayback;
 
 /// LedAnimationPlugin -- A plugin to run LED
 pub struct LedAnimationPlugin;
@@ -10,14 +10,13 @@ pub struct LedAnimationPlugin;
 impl Plugin for LedAnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_add_anim);
-        app.add_observer(on_remove_anim);
         app.add_systems(Update, anim_frame_handler);
     }
 }
 
 fn on_add_anim(
-    trigger: Trigger<OnAdd, LedAnimation>,
-    anim_query: Query<&LedAnimation>,
+    trigger: Trigger<OnAdd, LedAnimationPlayback>,
+    anim_query: Query<&LedAnimationPlayback>,
     mut leds: Query<(Entity, &mut RgbLed)>,
 ) {
     match anim_query.get(trigger.entity()) {
@@ -29,24 +28,9 @@ fn on_add_anim(
     }
 }
 
-fn on_remove_anim(
-    trigger: Trigger<OnRemove, LedAnimation>,
-    anim_query: Query<&LedAnimation>,
-    mut commands: Commands,
-) {
-    let anim = anim_query.get(trigger.entity()).unwrap();
-    match &anim.next {
-        None => {}
-        Some(next) => {
-            // start the next animation in the sequence
-            commands.spawn(*next.clone());
-        }
-    }
-}
-
 fn anim_frame_handler(
     time: ResMut<Time>,
-    mut anim_query: Query<(Entity, &mut LedAnimation)>,
+    mut anim_query: Query<(Entity, &mut LedAnimationPlayback)>, // TODO: Changed?
     mut led_query: Query<(Entity, &mut RgbLed)>,
     mut commands: Commands,
 ) {
@@ -61,6 +45,13 @@ fn anim_frame_handler(
                 match anim.repeat {
                     None => anim.current_frame = 0,
                     Some(0) => {
+                        // If there's a subsequent animation, start that
+                        match &anim.next {
+                            None => {}
+                            Some(next) => {
+                                commands.spawn(*next.clone());
+                            }
+                        }
                         // If repeat is enabled but there are none left
                         // then drop the animation
                         commands.entity(anim_entity).despawn();
@@ -79,14 +70,14 @@ fn anim_frame_handler(
     }
 }
 
-fn apply_current_frame(anim: &LedAnimation, led_query: &mut Query<(Entity, &mut RgbLed)>) {
+fn apply_current_frame(anim: &LedAnimationPlayback, led_query: &mut Query<(Entity, &mut RgbLed)>) {
     let frame = &anim.frames[anim.current_frame];
     apply_colors(frame, anim, led_query);
 }
 
 fn apply_colors(
     colors: &Vec<Color>,
-    anim: &LedAnimation,
+    anim: &LedAnimationPlayback,
     led_query: &mut Query<(Entity, &mut RgbLed)>,
 ) {
     for (led_entity, mut colored) in led_query {

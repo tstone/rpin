@@ -1,17 +1,17 @@
 use std::{collections::HashMap, time::Duration};
 
 use bevy::{
-    color::palettes::basic::AQUA,
+    color::palettes::{
+        basic::AQUA,
+        css::{BLACK, BLUE, PURPLE, RED},
+    },
     log::{Level, LogPlugin},
     prelude::*,
 };
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
-use pinball::frame_builder::{self, AnimationDuration};
+use pinball::animations::*;
+use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
 use pinball::*;
-use pinball::{
-    dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger},
-    frame_builder::AnimationSettings,
-};
 
 mod examples;
 mod fast;
@@ -51,49 +51,66 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
-    app.add_systems(Startup, eased_on_off);
+    app.add_systems(Startup, fancy_sequence);
     app.run();
 }
 
-fn basic_led_anim(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+fn low_level_anim(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
     let entities = query.iter().take(2).collect::<Vec<_>>();
     let frames = vec![
         vec![Color::hsl(180., 1.0, 0.35), Color::hsl(360., 1.0, 0.35)],
         vec![Color::hsl(360., 1.0, 0.35), Color::hsl(180., 1.0, 0.35)],
     ];
-    commands.spawn(LedAnimation::new(entities).repeating(5, 5, frames));
+    commands.spawn(LedAnimationPlayback::new(entities, 5, frames, None));
 }
 
-fn basic_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(2).collect::<Vec<_>>();
-    let frames = vec![
-        vec![Color::hsl(180., 1.0, 0.35), Color::hsl(360., 1.0, 0.35)],
-        vec![Color::hsl(360., 1.0, 0.35), Color::hsl(180., 1.0, 0.35)],
-    ];
-    commands.spawn(LedAnimation::new(entities).repeating(5, 5, frames));
+fn single_color(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+    let entities = query.iter().take(7).collect::<Vec<_>>();
+    let anim = Solid {
+        color: Color::from(AQUA),
+    };
+    commands.spawn(anim.to_repeated_playback(1, Duration::from_secs(3), entities, 1));
 }
 
-fn linear_led_anim(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(5).collect::<Vec<_>>();
-    let frames = frame_builder::sequential_linear(5, vec![Color::from(AQUA)]);
-    commands.spawn(LedAnimation::new(entities).repeating(10, 5, frames));
-}
-
-fn eased_on_off(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
-    let entities = query.iter().take(1).collect::<Vec<_>>();
-    let frames = frame_builder::flash(
-        1,
-        Color::from(AQUA),
-        AnimationSettings {
-            duration: AnimationDuration::Duration {
-                length: Duration::from_secs(1),
-                fps: 24,
+fn single_color_for_time(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+    let entities = query.iter().take(7).collect::<Vec<_>>();
+    let anim = LedAnimationSequence::new()
+        .play(
+            Duration::from_secs(1),
+            Solid {
+                color: Color::from(PURPLE),
             },
-            // duration: AnimationDuration::Frames(48),
-            ease_in: Some(EaseFunction::Elastic(25.)),
-            ease_out: Some(EaseFunction::BackOut),
-        },
-    );
+        )
+        .clear()
+        .to_playback(entities, 2);
 
-    commands.spawn(LedAnimation::new(entities).infinite(24, frames));
+    commands.spawn(anim);
+}
+
+fn fancy_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+    let entities = query.iter().take(1).collect::<Vec<_>>();
+    let color = Color::from(AQUA);
+    let anim = LedAnimationSequence::new()
+        .play(
+            Duration::from_secs(2),
+            Solid {
+                color: Color::from(BLUE),
+            },
+        )
+        .play(
+            Duration::from_secs(2),
+            Solid {
+                color: Color::from(PURPLE),
+            },
+        )
+        .play(
+            Duration::from_secs(2),
+            Solid {
+                color: Color::from(RED),
+            },
+        )
+        .clear()
+        .to_playback(entities, 24);
+
+    commands.spawn(anim);
 }

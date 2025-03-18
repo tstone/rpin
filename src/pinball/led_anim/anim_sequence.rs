@@ -1,68 +1,60 @@
-use bevy::prelude::*;
+use std::time::Duration;
 
-use super::LedAnimation;
+use bevy::{color::palettes::css::BLACK, prelude::*};
 
-/// Used to build up an LedAnimationSequence
-#[derive(Default, Clone)]
+use super::{animations::Solid, LedAnimation, LedAnimationPlayback};
+
+#[derive(Default)]
 pub struct LedAnimationSequence {
-    leds: Vec<Entity>,
-    fps: Option<u8>,
-    first: Option<LedAnimation>,
+    pairs: Vec<(Duration, Box<dyn LedAnimation>)>,
+    done: bool, // TODO: just return a new type
 }
 
 impl LedAnimationSequence {
-    pub fn new(leds: Vec<Entity>) -> Self {
-        Self {
-            leds: leds,
-            ..Default::default()
+    pub fn new() -> Self {
+        LedAnimationSequence::default()
+    }
+
+    pub fn play<T: LedAnimation + 'static>(mut self, duration: Duration, anim: T) -> Self {
+        if self.done {
+            panic!("LED animation added after repeating sequence was already specified.");
         }
+        self.pairs.push((duration, Box::new(anim)));
+        self
     }
 
-    pub fn fps(&self, fps: u8) -> Self {
-        Self {
-            fps: Some(fps),
-            ..self.clone()
+    pub fn repeating<T: LedAnimation + 'static>(mut self, duration: Duration, anim: T) -> Self {
+        self.pairs.push((duration, Box::new(anim)));
+        self.done = true;
+        self
+    }
+
+    pub fn clear(self) -> Self {
+        self.play(
+            Duration::from_millis(1),
+            Solid {
+                color: Color::from(BLACK),
+            },
+        )
+    }
+
+    pub fn to_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
+        Self::link(entities, fps, self.pairs).unwrap()
+    }
+
+    fn link(
+        entities: Vec<Entity>,
+        fps: u8,
+        mut rem: Vec<(Duration, Box<dyn LedAnimation>)>,
+    ) -> Option<LedAnimationPlayback> {
+        info!("link, rem len: {}", rem.len());
+        if rem.len() == 0 {
+            return None;
         }
-    }
 
-    pub fn once(&mut self, frames: Vec<Vec<Color>>) -> Self {
-        let anim = LedAnimation::new(self.leds.clone()).once(self.fps.unwrap(), frames);
-        self.append(anim);
-        self.clone()
-    }
-
-    pub fn repeating(&mut self, repeat: u8, frames: Vec<Vec<Color>>) -> Self {
-        let anim =
-            LedAnimation::new(self.leds.clone()).repeating(self.fps.unwrap(), repeat, frames);
-        self.append(anim);
-        self.clone()
-    }
-
-    pub fn infinite(&mut self, frames: Vec<Vec<Color>>) -> Self {
-        let anim = LedAnimation::new(self.leds.clone()).infinite(self.fps.unwrap(), frames);
-        self.append(anim);
-        self.clone()
-    }
-
-    fn append(&mut self, anim: LedAnimation) -> Self {
-        if let Some(first) = &self.first {
-            match first.last_mut() {
-                Some(last) => last.next = Some(Box::new(anim)),
-                None => {}
-            }
-        } else {
-            self.first = Some(anim);
-        }
-        self.clone()
-    }
-
-    /// Returns the linked list sequence of animations
-    pub fn get(&self) -> LedAnimation {
-        self.first.clone().unwrap()
-    }
-
-    /// Merges all animations down to one. This will use the first FPS encountered
-    pub fn merge(&self) -> LedAnimation {
-        self.get().merge()
+        let (dur, anim) = rem.remove(0);
+        let mut next = anim.to_repeated_playback(0, dur, entities.clone(), fps);
+        next.next = Self::link(entities, fps, rem).map(|n| Box::new(n));
+        Some(next)
     }
 }
