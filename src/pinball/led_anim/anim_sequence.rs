@@ -2,12 +2,11 @@ use std::time::Duration;
 
 use bevy::{color::palettes::css::BLACK, prelude::*};
 
-use super::{animations::Solid, LedAnimation, LedAnimationPlayback};
+use super::{animations::Solid, calculate_frames, LedAnimation, LedAnimationPlayback, LedFrameSet};
 
 #[derive(Default)]
 pub struct LedAnimationSequence {
     pairs: Vec<(Duration, Box<dyn LedAnimation>)>,
-    done: bool, // TODO: just return a new type
 }
 
 impl LedAnimationSequence {
@@ -15,22 +14,22 @@ impl LedAnimationSequence {
         LedAnimationSequence::default()
     }
 
-    pub fn play<T: LedAnimation + 'static>(mut self, duration: Duration, anim: T) -> Self {
-        if self.done {
-            panic!("LED animation added after repeating sequence was already specified.");
-        }
+    pub fn once<T: LedAnimation + 'static>(mut self, duration: Duration, anim: T) -> Self {
         self.pairs.push((duration, Box::new(anim)));
         self
     }
 
-    pub fn repeating<T: LedAnimation + 'static>(mut self, duration: Duration, anim: T) -> Self {
+    pub fn forever<T: LedAnimation + 'static>(
+        mut self,
+        duration: Duration,
+        anim: T,
+    ) -> LedAnimationSequenceLinked {
         self.pairs.push((duration, Box::new(anim)));
-        self.done = true;
-        self
+        LedAnimationSequenceLinked { pairs: self.pairs }
     }
 
     pub fn clear(self) -> Self {
-        self.play(
+        self.once(
             Duration::from_millis(1),
             Solid {
                 color: Color::from(BLACK),
@@ -38,23 +37,52 @@ impl LedAnimationSequence {
         )
     }
 
-    pub fn to_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
-        Self::link(entities, fps, self.pairs).unwrap()
-    }
-
-    fn link(
+    /// Combine sequence to a single playback
+    pub fn to_playback(
+        self,
         entities: Vec<Entity>,
         fps: u8,
-        mut rem: Vec<(Duration, Box<dyn LedAnimation>)>,
-    ) -> Option<LedAnimationPlayback> {
-        info!("link, rem len: {}", rem.len());
-        if rem.len() == 0 {
-            return None;
+        repeat: Option<u8>,
+    ) -> LedAnimationPlayback {
+        let mut frames: LedFrameSet = Vec::new();
+        for (dur, anim) in self.pairs {
+            let frame_count = calculate_frames(fps, dur);
+            frames.append(&mut anim.render(entities.len() as u16, frame_count));
         }
-
-        let (dur, anim) = rem.remove(0);
-        let mut next = anim.to_repeated_playback(0, dur, entities.clone(), fps);
-        next.next = Self::link(entities, fps, rem).map(|n| Box::new(n));
-        Some(next)
+        LedAnimationPlayback::new(entities, fps, frames, repeat)
     }
+}
+
+#[derive(Default)]
+pub struct LedAnimationSequenceLinked {
+    pairs: Vec<(Duration, Box<dyn LedAnimation>)>,
+}
+
+impl LedAnimationSequenceLinked {
+    /// Combine sequence to a linked list of playbacks, where the last one repeats
+    pub fn to_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
+        to_playback_rec(entities, fps, self.pairs, true).unwrap()
+    }
+}
+
+fn to_playback_rec(
+    entities: Vec<Entity>,
+    fps: u8,
+    mut rem: Vec<(Duration, Box<dyn LedAnimation>)>,
+    loop_last: bool,
+) -> Option<LedAnimationPlayback> {
+    info!("link, rem len: {}", rem.len());
+    if rem.len() == 0 {
+        return None;
+    }
+
+    let (dur, anim) = rem.remove(0);
+    let mut next = if loop_last && rem.len() == 1 {
+        anim.to_infinite_playback(dur, entities.clone(), fps)
+    } else {
+        anim.to_repeated_playback(0, dur, entities.clone(), fps)
+    };
+
+    next.next = to_playback_rec(entities, fps, rem, loop_last).map(|n| Box::new(n));
+    Some(next)
 }

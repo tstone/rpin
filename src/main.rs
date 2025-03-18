@@ -51,7 +51,7 @@ fn main() {
             CabinetSwitches::AddCoin,
         )])));
 
-    app.add_systems(Startup, fancy_sequence);
+    app.add_systems(Startup, breathing);
     app.run();
 }
 
@@ -75,42 +75,80 @@ fn single_color(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
 fn single_color_for_time(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
     let entities = query.iter().take(7).collect::<Vec<_>>();
     let anim = LedAnimationSequence::new()
-        .play(
+        .once(
             Duration::from_secs(1),
             Solid {
                 color: Color::from(PURPLE),
             },
         )
         .clear()
-        .to_playback(entities, 2);
+        .to_playback(entities, 2, None);
 
     commands.spawn(anim);
 }
 
 fn fancy_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
     let entities = query.iter().take(1).collect::<Vec<_>>();
-    let color = Color::from(AQUA);
     let anim = LedAnimationSequence::new()
-        .play(
+        .once(
             Duration::from_secs(2),
             Solid {
                 color: Color::from(BLUE),
             },
         )
-        .play(
+        .once(
             Duration::from_secs(2),
             Solid {
                 color: Color::from(PURPLE),
             },
         )
-        .play(
+        .once(
             Duration::from_secs(2),
             Solid {
                 color: Color::from(RED),
             },
         )
         .clear()
-        .to_playback(entities, 24);
+        .to_playback(entities, 2, None);
+
+    commands.spawn(anim);
+}
+
+fn breathing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
+    let entities = query.iter().take(1).collect::<Vec<_>>();
+    let color = Color::from(RED);
+
+    let anim = LedAnimationSequence::new()
+        .once(
+            Duration::from_millis(500),
+            EaseBrightness {
+                color,
+                easing: Easing {
+                    from: 0.,
+                    to: Hsla::from(color).lightness,
+                    easefn: EaseFunction::CubicIn,
+                },
+            },
+        )
+        .once(Duration::from_secs(1), Solid { color })
+        .once(
+            Duration::from_millis(500),
+            EaseBrightness {
+                color,
+                easing: Easing {
+                    from: Hsla::from(color).lightness,
+                    to: 0.,
+                    easefn: EaseFunction::CubicOut,
+                },
+            },
+        )
+        .once(
+            Duration::from_secs(1),
+            Solid {
+                color: Color::from(BLACK),
+            },
+        )
+        .to_playback(entities, 24, None);
 
     commands.spawn(anim);
 }

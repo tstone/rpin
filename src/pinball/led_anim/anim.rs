@@ -12,8 +12,8 @@ pub trait LedAnimation {
 
     fn to_infinite_playback(
         &self,
-        entities: Vec<Entity>,
         duration: Duration,
+        entities: Vec<Entity>,
         fps: u8,
     ) -> LedAnimationPlayback {
         let frame_count = calculate_frames(fps, duration);
@@ -34,7 +34,7 @@ pub trait LedAnimation {
     }
 }
 
-fn calculate_frames(fps: u8, duration: Duration) -> u64 {
+pub(crate) fn calculate_frames(fps: u8, duration: Duration) -> u64 {
     let millis = duration.as_millis() * fps as u128;
     cmp::max(1, millis / 1000) as u64
 }
