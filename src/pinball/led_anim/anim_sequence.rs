@@ -37,8 +37,25 @@ impl LedAnimationSequence {
         )
     }
 
-    /// Combine sequence to a single playback
-    pub fn to_playback(
+    pub fn to_one_shot(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
+        let mut frames: LedFrameSet = Vec::new();
+        for (dur, anim) in self.pairs {
+            let frame_count = calculate_frames(fps, dur);
+            frames.append(&mut anim.render(entities.len() as u16, frame_count));
+        }
+        LedAnimationPlayback::new(entities, fps, frames, Some(0))
+    }
+
+    pub fn to_infinite_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
+        let mut frames: LedFrameSet = Vec::new();
+        for (dur, anim) in self.pairs {
+            let frame_count = calculate_frames(fps, dur);
+            frames.append(&mut anim.render(entities.len() as u16, frame_count));
+        }
+        LedAnimationPlayback::new(entities, fps, frames, None)
+    }
+
+    pub fn to_fixed_playback(
         self,
         entities: Vec<Entity>,
         fps: u8,
@@ -60,7 +77,7 @@ pub struct LedAnimationSequenceLinked {
 
 impl LedAnimationSequenceLinked {
     /// Combine sequence to a linked list of playbacks, where the last one repeats
-    pub fn to_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
+    pub fn to_infinite_playback(self, entities: Vec<Entity>, fps: u8) -> LedAnimationPlayback {
         to_playback_rec(entities, fps, self.pairs, true).unwrap()
     }
 }
@@ -80,7 +97,7 @@ fn to_playback_rec(
     let mut next = if loop_last && rem.len() == 1 {
         anim.to_infinite_playback(dur, entities.clone(), fps)
     } else {
-        anim.to_repeated_playback(0, dur, entities.clone(), fps)
+        anim.to_fixed_playback(0, dur, entities.clone(), fps)
     };
 
     next.next = to_playback_rec(entities, fps, rem, loop_last).map(|n| Box::new(n));

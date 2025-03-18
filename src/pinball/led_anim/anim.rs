@@ -21,16 +21,27 @@ pub trait LedAnimation {
         LedAnimationPlayback::new(entities, fps, rendered, None)
     }
 
-    fn to_repeated_playback(
+    fn to_fixed_playback(
         &self,
-        repeat: u8,
+        play_count: u8,
         duration: Duration,
         entities: Vec<Entity>,
         fps: u8,
     ) -> LedAnimationPlayback {
         let frame_count = calculate_frames(fps, duration);
         let rendered = self.render(entities.len() as u16, frame_count);
-        LedAnimationPlayback::new(entities, fps, rendered, Some(repeat))
+        LedAnimationPlayback::new(entities, fps, rendered, Some(play_count - 1))
+    }
+
+    fn to_one_shot(
+        &self,
+        duration: Duration,
+        entities: Vec<Entity>,
+        fps: u8,
+    ) -> LedAnimationPlayback {
+        let frame_count = calculate_frames(fps, duration);
+        let rendered = self.render(entities.len() as u16, frame_count);
+        LedAnimationPlayback::new(entities, fps, rendered, Some(0))
     }
 }
 

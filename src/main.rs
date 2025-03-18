@@ -69,7 +69,7 @@ fn single_color(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
     let anim = Solid {
         color: Color::from(AQUA),
     };
-    commands.spawn(anim.to_repeated_playback(1, Duration::from_secs(3), entities, 1));
+    commands.spawn(anim.to_fixed_playback(1, Duration::from_secs(3), entities, 1));
 }
 
 fn single_color_for_time(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
@@ -82,7 +82,7 @@ fn single_color_for_time(mut commands: Commands, query: Query<Entity, With<RgbLe
             },
         )
         .clear()
-        .to_playback(entities, 2, None);
+        .to_fixed_playback(entities, 2, None);
 
     commands.spawn(anim);
 }
@@ -109,7 +109,7 @@ fn fancy_sequence(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
             },
         )
         .clear()
-        .to_playback(entities, 2, None);
+        .to_fixed_playback(entities, 2, None);
 
     commands.spawn(anim);
 }
@@ -148,7 +148,7 @@ fn breathing(mut commands: Commands, query: Query<Entity, With<RgbLed>>) {
                 color: Color::from(BLACK),
             },
         )
-        .to_playback(entities, 24, None);
+        .to_fixed_playback(entities, 24, None);
 
     commands.spawn(anim);
 }
