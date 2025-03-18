@@ -1,8 +1,8 @@
-use bevy::{color::palettes::css::BLACK, prelude::*};
+use bevy::prelude::*;
 
-use crate::pinball::{Colored, EndBehavior};
+use crate::pinball::RgbLed;
 
-use super::anim::LEDAnimation;
+use super::anim::LedAnimation;
 
 /// LedAnimationPlugin -- A plugin to run LED
 pub struct LedAnimationPlugin;
@@ -15,26 +15,13 @@ impl Plugin for LedAnimationPlugin {
     }
 }
 
-/// Runs the first time an LEDAnimation is added to the world
 fn on_add_anim(
-    trigger: Trigger<OnAdd, LEDAnimation>,
-    mut anim_query: Query<&mut LEDAnimation>,
-    mut leds: Query<(Entity, &mut Colored)>,
+    trigger: Trigger<OnAdd, LedAnimation>,
+    anim_query: Query<&LedAnimation>,
+    mut leds: Query<(Entity, &mut RgbLed)>,
 ) {
-    match anim_query.get_mut(trigger.entity()) {
-        Ok(mut anim) => {
-            // Record previous colors if feature is enabled
-            if anim.end_behavior == EndBehavior::Previous {
-                anim.previous_colors = anim
-                    .led_indexes
-                    .keys()
-                    .map(|led| match leds.get(*led) {
-                        Ok((_, colored)) => colored.color.clone(),
-                        _ => Color::from(BLACK),
-                    })
-                    .collect::<Vec<_>>();
-            }
-
+    match anim_query.get(trigger.entity()) {
+        Ok(anim) => {
             // apply first frame to start animation instantly
             apply_current_frame(&anim, &mut leds);
         }
@@ -42,31 +29,25 @@ fn on_add_anim(
     }
 }
 
-/// Runs when an animation is removed/stopped and applies previous behavior
 fn on_remove_anim(
-    trigger: Trigger<OnRemove, LEDAnimation>,
-    anim_query: Query<&LEDAnimation>,
-    mut leds: Query<(Entity, &mut Colored)>,
+    trigger: Trigger<OnRemove, LedAnimation>,
+    anim_query: Query<&LedAnimation>,
+    mut commands: Commands,
 ) {
     let anim = anim_query.get(trigger.entity()).unwrap();
-    match anim.end_behavior {
-        EndBehavior::Black => {
-            let blacks = anim
-                .led_indexes
-                .iter()
-                .map(|_| Color::hsl(0., 0., 0.))
-                .collect::<Vec<_>>();
-            apply_colors(&blacks, anim, &mut leds);
+    match &anim.next {
+        None => {}
+        Some(next) => {
+            // start the next animation in the sequence
+            commands.spawn(*next.clone());
         }
-        EndBehavior::Previous => apply_colors(&anim.previous_colors, anim, &mut leds),
-        EndBehavior::Nothing => {}
     }
 }
 
 fn anim_frame_handler(
     time: ResMut<Time>,
-    mut anim_query: Query<(Entity, &mut LEDAnimation)>,
-    mut led_query: Query<(Entity, &mut Colored)>,
+    mut anim_query: Query<(Entity, &mut LedAnimation)>,
+    mut led_query: Query<(Entity, &mut RgbLed)>,
     mut commands: Commands,
 ) {
     for (anim_entity, mut anim) in &mut anim_query {
@@ -98,15 +79,15 @@ fn anim_frame_handler(
     }
 }
 
-fn apply_current_frame(anim: &LEDAnimation, led_query: &mut Query<(Entity, &mut Colored)>) {
+fn apply_current_frame(anim: &LedAnimation, led_query: &mut Query<(Entity, &mut RgbLed)>) {
     let frame = &anim.frames[anim.current_frame];
     apply_colors(frame, anim, led_query);
 }
 
 fn apply_colors(
     colors: &Vec<Color>,
-    anim: &LEDAnimation,
-    led_query: &mut Query<(Entity, &mut Colored)>,
+    anim: &LedAnimation,
+    led_query: &mut Query<(Entity, &mut RgbLed)>,
 ) {
     for (led_entity, mut colored) in led_query {
         match anim.led_indexes.get(&led_entity) {

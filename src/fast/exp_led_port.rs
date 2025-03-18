@@ -1,24 +1,20 @@
 use bevy::prelude::*;
 use std::{fmt::Debug, hash::Hash};
 
-use crate::pinball::{Colored, Identity, Position};
+use crate::pinball::{Identity, PlayfieldPosition, RgbLed};
 
 use super::{resources::ExpPort, serial::exp_write, ExpansionBoard};
 
-pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LEDDefinition<K>>);
+pub struct ExpansionLeds<K: Copy + Eq + Hash + Send + Sync + 'static>(pub Vec<LedDefinition<K>>);
 
 impl<K: Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLeds<K> {
     fn build(&self, app: &mut App) {
         for definition in self.0.iter() {
             // spawn entities for LEDs
-            app.world_mut().spawn((
+            let mut entity = app.world_mut().spawn((
                 Identity { id: definition.id },
-                Colored {
+                RgbLed {
                     color: Color::hsl(0., 0., 0.),
-                },
-                Position {
-                    row: definition.row,
-                    col: definition.col,
                 },
                 FastLED {
                     expansion_address: definition.board.as_str(),
@@ -26,16 +22,17 @@ impl<K: Debug + Copy + Eq + Hash + Send + Sync + 'static> Plugin for ExpansionLe
                     index: definition.index,
                 },
             ));
+
+            if let Some(pos) = &definition.playfield_position {
+                entity.insert(pos.clone());
+            }
         }
 
         app.add_systems(Update, led_change_listener);
     }
 }
 
-fn led_change_listener(
-    query: Query<(&Colored, &FastLED), Changed<Colored>>,
-    port: ResMut<ExpPort>,
-) {
+fn led_change_listener(query: Query<(&RgbLed, &FastLED), Changed<RgbLed>>, port: ResMut<ExpPort>) {
     for (indicator, led) in &query {
         let data = led_color_event(led, indicator.color);
         exp_write(data, &port);
@@ -65,13 +62,12 @@ pub struct FastLED {
 /// Configuration for a single LED
 /// See: https://fastpinball.com/programming/exp/#expansion-board-addresses
 #[derive(Debug, Default, Clone)]
-pub struct LEDDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
+pub struct LedDefinition<K: Copy + Eq + Hash + Send + Sync + 'static> {
     pub id: K,
     pub board: ExpansionBoard,
     pub port: u8,
     pub index: u8,
-    pub row: u16,
-    pub col: u16,
+    pub playfield_position: Option<PlayfieldPosition>,
 }
 
 fn hsl_to_hex(color: Color) -> String {
