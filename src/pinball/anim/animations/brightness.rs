@@ -1,78 +1,6 @@
 use bevy::prelude::*;
 
-use crate::pinball::{anim::anim::LedAnimation, LedFrameSet, PhasedLedAnimation};
-
-use super::Easing;
-
-// -- BrightnessEaseIn --
-
-#[derive(Debug, Clone)]
-pub struct BrightnessEaseIn {
-    pub color: Color,
-    pub from: f32,
-    pub ease: EaseFunction,
-}
-
-impl Default for BrightnessEaseIn {
-    fn default() -> Self {
-        Self {
-            color: Default::default(),
-            from: 0.,
-            ease: EaseFunction::Linear,
-        }
-    }
-}
-
-impl LedAnimation for BrightnessEaseIn {
-    fn render(&self, led_count: u16, frame_count: u64, _fps: u8) -> LedFrameSet {
-        ease_brightness(
-            self.color,
-            Easing {
-                from: self.from,
-                to: Hsla::from(self.color).lightness,
-                easefn: self.ease,
-            },
-            led_count,
-            frame_count,
-        )
-    }
-}
-
-// -- BrightnessEaseOut --
-
-#[derive(Debug, Clone)]
-pub struct BrightnessEaseOut {
-    pub color: Color,
-    pub to: f32,
-    pub ease: EaseFunction,
-}
-
-impl Default for BrightnessEaseOut {
-    fn default() -> Self {
-        Self {
-            color: Default::default(),
-            to: 0.,
-            ease: EaseFunction::Linear,
-        }
-    }
-}
-
-impl LedAnimation for BrightnessEaseOut {
-    fn render(&self, led_count: u16, frame_count: u64, _fps: u8) -> LedFrameSet {
-        ease_brightness(
-            self.color,
-            Easing {
-                from: Hsla::from(self.color).lightness,
-                to: self.to,
-                easefn: self.ease,
-            },
-            led_count,
-            frame_count,
-        )
-    }
-}
-
-// -- Brightness Curve --
+use crate::pinball::PhasedLedAnimation;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Brightness(pub f32);
@@ -93,44 +21,52 @@ impl Ease for Brightness {
     }
 }
 
-fn ease_brightness(
-    color: Color,
-    easing: Easing<f32>,
-    led_count: u16,
-    frame_count: u64,
-) -> LedFrameSet {
-    let mut frames: Vec<Vec<Color>> = Vec::new();
-    let hsl = Hsla::from(color);
-    let curve = Brightness::curve(easing.from, easing.to, easing.easefn);
+// TODO: can the thing being animated be part of the curve
+// And the animations simply apply it, e.g. "EaseIn" for hue
+// Dimension -- What is being animated
+// Ease -- The function that is mapping the dimension
+// Animation -- Iterator that realizes the dimension+curve
 
-    for i in 0..frame_count {
-        let point_on_curve = (i as f32) / (frame_count as f32);
-        let frame_lightness = curve.sample_unchecked(point_on_curve).0;
-        let hsla = hsl.clone().with_lightness(frame_lightness);
+/*
 
-        let mut frame: Vec<Color> = Vec::new();
-        for _ in 0..led_count {
-            frame.push(Color::from(hsla.clone()));
-        }
-        frames.push(frame);
-    }
 
-    frames
-}
+
+
+*/
 
 // ---
 
 #[derive(Debug, Clone)]
-pub struct PhasedBrightnessEaseIn {
+pub struct BrightnessEaseIn {
     pub color: Color,
     pub from: f32,
     pub ease: EaseFunction,
 }
 
-impl PhasedLedAnimation for PhasedBrightnessEaseIn {
-    fn render(&self, led_count: u16, timing: crate::pinball::LedAnimationTiming) -> Vec<Color> {
+impl PhasedLedAnimation for BrightnessEaseIn {
+    fn sample(&self, led_count: u16, timing: crate::pinball::LedAnimationTiming) -> Vec<Color> {
         let hsl = Hsla::from(self.color);
         let curve = Brightness::curve(self.from, hsl.lightness, self.ease);
+        let frame_lightness = curve.sample_unchecked(timing.phase).0;
+        let hsla = hsl.clone().with_lightness(frame_lightness);
+
+        (0..led_count)
+            .map(|_| Color::from(hsla.clone()))
+            .collect::<Vec<_>>()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BrightnessEaseOut {
+    pub color: Color,
+    pub to: f32,
+    pub ease: EaseFunction,
+}
+
+impl PhasedLedAnimation for BrightnessEaseOut {
+    fn sample(&self, led_count: u16, timing: crate::pinball::LedAnimationTiming) -> Vec<Color> {
+        let hsl = Hsla::from(self.color);
+        let curve = Brightness::curve(hsl.lightness, self.to, self.ease);
         let frame_lightness = curve.sample_unchecked(timing.phase).0;
         let hsla = hsl.clone().with_lightness(frame_lightness);
 

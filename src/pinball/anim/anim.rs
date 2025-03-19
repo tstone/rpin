@@ -54,7 +54,7 @@ pub(crate) fn calculate_frames(fps: u8, duration: Duration) -> u64 {
 // ---
 
 pub trait PhasedLedAnimation {
-    fn render(&self, led_count: u16, timing: LedAnimationTiming) -> Vec<Color>;
+    fn sample(&self, led_count: u16, timing: LedAnimationTiming) -> Vec<Color>;
 }
 
 pub struct LedAnimationTiming {
@@ -82,6 +82,12 @@ impl LedAnimationTiming {
     }
 }
 
+// TODO: make an animation with Ease + ColorDimension
+
+pub trait ColorDimension<T> {
+    fn apply(&self, ease: EasingCurve<T>) -> Color;
+}
+
 // -- Iterator --
 
 pub struct LedAnimationIterator {
@@ -101,7 +107,7 @@ impl Iterator for LedAnimationIterator {
         if self.phase > 1.0 {
             None
         } else {
-            Some(self.animation.render(
+            Some(self.animation.sample(
                 self.led_count,
                 LedAnimationTiming {
                     phase: self.phase,

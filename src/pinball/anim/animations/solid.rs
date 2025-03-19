@@ -8,8 +8,8 @@ pub struct Solid {
     pub color: Color,
 }
 
-impl LedAnimation for Solid {
-    fn render(&self, led_count: u16, frame_count: u64, _fps: u8) -> LedFrameSet {
-        vec![vec![self.color; led_count as usize]; frame_count as usize]
+impl PhasedLedAnimation for Solid {
+    fn sample(&self, led_count: u16, _timing: LedAnimationTiming) -> Vec<Color> {
+        vec![self.color; led_count as usize]
     }
 }
