@@ -146,6 +146,7 @@ pub enum PaymentState {
 }
 
 /// A state which indicates if there are or aren't sufficient credits
+#[allow(dead_code)]
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub enum AddPlayerState {
     NotAcceptingPlayers,

@@ -1,5 +1,6 @@
 use bevy::ecs::component::Component;
 
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlayfieldIndicators {
     LeftSpinner,
@@ -9,6 +10,7 @@ pub enum PlayfieldIndicators {
     RightLane,
 }
 
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlayfieldSwitches {
     MaserCanon,
