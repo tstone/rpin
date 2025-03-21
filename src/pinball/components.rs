@@ -16,7 +16,7 @@ pub struct PlayfieldPosition {
 }
 
 /// Colored -- Something which can have it's color set, like an RGB LED
-#[derive(Component, Debug, Clone, PartialEq, Default)]
+#[derive(Component, Debug, Clone, PartialEq, Default, Reflect)]
 pub struct RgbLed {
-    pub color: Color,
+    pub color: Srgba,
 }
