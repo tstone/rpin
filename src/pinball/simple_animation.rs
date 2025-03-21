@@ -20,7 +20,6 @@ impl SimpleAnimation {
         mut animation_graphs: ResMut<Assets<AnimationGraph>>,
         mut animation_clips: ResMut<Assets<AnimationClip>>,
     ) -> SimpleAnimation {
-        let t = &curve.curve.domain().length();
         let target_id = AnimationTargetId::from_name(name);
         let mut clip = AnimationClip::default();
         clip.add_curve_to_target(target_id, curve);

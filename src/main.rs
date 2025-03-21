@@ -1,6 +1,7 @@
 use std::cmp;
 use std::collections::HashMap;
 
+use bevy::color::palettes::tailwind::{PINK_950, PURPLE_950, SKY_800, VIOLET_950};
 use bevy::log::{Level, LogPlugin};
 use bevy::{animation::*, color::palettes::css::*, prelude::*};
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
@@ -85,52 +86,71 @@ fn color_anim_setup(
 
 fn setup_linear_space(
     mut commands: Commands,
-    animation_graphs: ResMut<Assets<AnimationGraph>>,
-    animation_clips: ResMut<Assets<AnimationClip>>,
+    mut animation_graphs: ResMut<Assets<AnimationGraph>>,
+    mut animation_clips: ResMut<Assets<AnimationClip>>,
 ) {
     let name = Name::new("test_animation");
     let mut entity = commands.spawn((
         name.clone(),
-        LinearLedSpace {
+        LedSequence {
             position: 7.0,
             direction: 1,
             color: BLUE,
-            names: vec![
-                Name::new("LED0"),
-                Name::new("LED1"),
-                Name::new("LED2"),
-                Name::new("LED3"),
-                Name::new("LED4"),
-                Name::new("LED5"),
-                Name::new("LED6"),
-                Name::new("LED7"),
-            ],
+            names: (0..8)
+                .map(|i| Name::new(format!("LED{i}")))
+                .collect::<Vec<_>>(),
             behavior: LinearLedBehavior::Single,
         },
     ));
 
-    let pos_curve = AnimatableCurve::new(
-        animated_field!(LinearLedSpace::position),
-        EasingCurve::new(0., 7., EaseFunction::BounceOut)
-            .reparametrize_linear(interval(0.0, 3.).unwrap())
+    let position_curve = AnimatableCurve::new(
+        animated_field!(LedSequence::position),
+        EasingCurve::new(0., 7., EaseFunction::CircularIn)
+            .reparametrize_linear(interval(0.0, 1.5).unwrap())
             .unwrap()
             .ping_pong()
             .unwrap(),
     );
 
-    let mut anim = SimpleAnimation::new(
-        &name,
-        entity.id(),
-        pos_curve,
-        animation_graphs,
-        animation_clips,
+    let color_curve = AnimatableCurve::new(
+        animated_field!(LedSequence::color),
+        EasingCurve::new(BLACK, PINK_950, EaseFunction::Linear)
+            .chain(EasingCurve::new(PINK_950, PURPLE_950, EaseFunction::Linear))
+            .unwrap()
+            .chain(EasingCurve::new(PURPLE_950, SKY_800, EaseFunction::Linear))
+            .unwrap()
+            .chain(EasingCurve::new(SKY_800, PINK_950, EaseFunction::Linear))
+            .unwrap()
+            .chain(EasingCurve::new(PINK_950, BLACK, EaseFunction::Linear))
+            .unwrap()
+            .reparametrize_linear(interval(0., 3.).unwrap())
+            .unwrap(),
     );
-    anim.player.play(anim.animation_index).repeat();
-    entity.insert(anim.to_bundle());
+
+    let target_id = AnimationTargetId::from_name(&name);
+    let mut clip = AnimationClip::default();
+    clip.add_curve_to_target(target_id, position_curve);
+    clip.add_curve_to_target(target_id, color_curve);
+
+    let clip_handle = animation_clips.add(clip);
+    let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
+    let graph_handle = animation_graphs.add(graph);
+    let mut player = AnimationPlayer::default();
+
+    player.play(animation_index).repeat();
+
+    entity.insert((
+        player,
+        AnimationGraphHandle(graph_handle),
+        AnimationTarget {
+            id: target_id,
+            player: entity.id(),
+        },
+    ));
 }
 
 fn setup_linear_anim(
-    trigger: Trigger<OnAdd, LinearLedSpace>,
+    trigger: Trigger<OnAdd, LedSequence>,
     mut commands: Commands,
     animation_graphs: ResMut<Assets<AnimationGraph>>,
     animation_clips: ResMut<Assets<AnimationClip>>,
@@ -138,7 +158,7 @@ fn setup_linear_anim(
     info!("added led linear space");
     let name = Name::new("test_animation");
     let curve = AnimatableCurve::new(
-        animated_field!(LinearLedSpace::color),
+        animated_field!(LedSequence::color),
         EasingCurve::new(BLACK, RED, EaseFunction::CubicInOut)
             .chain(EasingCurve::new(RED, BLUE_VIOLET, EaseFunction::Linear))
             .unwrap()
@@ -158,7 +178,7 @@ fn setup_linear_anim(
 }
 
 #[derive(Component, Clone, Debug, Default, Reflect)]
-pub struct LinearLedSpace {
+pub struct LedSequence {
     position: f32,
     direction: i8,
     color: Srgba,
@@ -177,7 +197,7 @@ pub enum LinearLedBehavior {
 }
 
 fn render_linear_space(
-    spaces: Query<&LinearLedSpace, Changed<LinearLedSpace>>,
+    spaces: Query<&LedSequence, Changed<LedSequence>>,
     mut leds: Query<(&Name, &mut RgbLed)>,
 ) {
     // for each space that has changed
