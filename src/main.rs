@@ -127,6 +127,9 @@ fn setup_linear_space(
             .unwrap(),
     );
 
+    // TODO: make a "progress animation" that uses sample+some value to update the progress
+    // color_curve.curve.sample(t)
+
     let target_id = AnimationTargetId::from_name(&name);
     let mut clip = AnimationClip::default();
     clip.add_curve_to_target(target_id, position_curve);
