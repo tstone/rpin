@@ -1,19 +1,32 @@
-use bevy::{color::palettes::css::BLACK, prelude::*};
-use std::fmt::Debug;
+use bevy::{color::palettes::css::BLACK, prelude::*, time::common_conditions::on_timer};
+use std::{fmt::Debug, time::Duration};
 
-use crate::pinball::{PlayfieldPosition, RgbLed};
+use crate::pinball::RgbLed;
 
 use super::{resources::ExpPort, serial::exp_write, ExpansionBoard};
 
-pub struct ExpansionLeds(pub Vec<LedDefinition>);
+pub struct ExpansionLeds {
+    pub leds: Vec<LedDefinition>,
+    /// How frequently to send out updates to LEDs; given in Hz/FPS
+    pub update_hz: f32,
+}
+
+impl Default for ExpansionLeds {
+    fn default() -> Self {
+        Self {
+            leds: Default::default(),
+            update_hz: 24.0,
+        }
+    }
+}
 
 impl Plugin for ExpansionLeds {
     fn build(&self, app: &mut App) {
-        for definition in self.0.iter() {
+        for definition in self.leds.iter() {
             // spawn entities for LEDs
             let mut entity = app.world_mut().spawn((
                 RgbLed { color: BLACK },
-                FastLED {
+                FastExpansionDevice {
                     expansion_address: definition.board.as_str(),
                     port: definition.port,
                     index: definition.index,
@@ -24,25 +37,27 @@ impl Plugin for ExpansionLeds {
             if !definition.name.is_empty() {
                 entity.insert(Name::new(definition.name));
             }
-
-            // PlayfieldPosition
-            if let Some(pos) = &definition.playfield_position {
-                entity.insert(pos.clone());
-            }
         }
 
-        app.add_systems(Update, led_change_listener);
+        let update_led_duration = Duration::from_secs_f32(1. / self.update_hz);
+        app.add_systems(
+            FixedLast,
+            led_change_listener.run_if(on_timer(update_led_duration)),
+        );
     }
 }
 
-fn led_change_listener(query: Query<(&RgbLed, &FastLED), Changed<RgbLed>>, port: ResMut<ExpPort>) {
+fn led_change_listener(
+    query: Query<(&RgbLed, &FastExpansionDevice), Changed<RgbLed>>,
+    port: ResMut<ExpPort>,
+) {
     for (indicator, led) in &query {
         let data = led_color_event(led, indicator.color);
         exp_write(data, &port);
     }
 }
 
-fn led_color_event(led: &FastLED, color: Srgba) -> String {
+fn led_color_event(led: &FastExpansionDevice, color: Srgba) -> String {
     format!(
         "RS@{}{}:{}{}",
         led.expansion_address,
@@ -52,9 +67,9 @@ fn led_color_event(led: &FastLED, color: Srgba) -> String {
     )
 }
 
-/// FastLED -- Component which adds FAST EXP address information
+/// FastLED -- Hardware attached to a Fast expansion board
 #[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Default)]
-pub struct FastLED {
+pub struct FastExpansionDevice {
     pub expansion_address: &'static str,
     /// Port on expansion board
     pub port: u8,
@@ -70,7 +85,6 @@ pub struct LedDefinition {
     pub port: u8,
     pub index: u8,
     pub name: &'static str,
-    pub playfield_position: Option<PlayfieldPosition>,
 }
 
 fn hsl_to_hex(rgb: Srgba) -> String {
