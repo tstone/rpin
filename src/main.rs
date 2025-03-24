@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use bevy::animation::*;
+use bevy::color::palettes::tailwind::{TEAL_200, TEAL_400};
 use bevy::log::{Level, LogPlugin};
 use bevy::{color::palettes::css::*, prelude::*};
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
 use pinball::dev_tools::keyboard::SwitchEmulator;
 use pinball::*;
-use rgb_led::{LedSequence, LedSequenceFill, LedSequencePlugin};
+use rgb_led::{LedGradient, LedGradientFill, LedSequence, LedSequenceFill, RgbLedPlugin};
 
 mod examples;
 mod fast;
@@ -42,7 +43,7 @@ fn main() {
         leds: playfield_leds,
         ..Default::default()
     })
-    .add_plugins(LedSequencePlugin);
+    .add_plugins(RgbLedPlugin);
 
     #[cfg(debug_assertions)]
     app.add_plugins(SwitchEmulator(HashMap::from([(
@@ -71,31 +72,41 @@ fn setup_seq(
     mut animation_clips: ResMut<Assets<AnimationClip>>,
 ) {
     let led_names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
-    let seq = LedSequence {
-        position: 4.,
-        color: RED,
+    let seq = LedGradient {
+        position: 7.,
+        from_color: RED,
+        to_color: BLUE,
         names: led_names,
-        behavior: LedSequenceFill::Split(2),
+        behavior: LedGradientFill::Tail(2),
     };
 
     let name = Name::new("led_seq_example");
     let target_id = AnimationTargetId::from_name(&name);
     let mut entity_commands = commands.spawn((name, seq));
 
-    let duration = 2.0;
+    let duration = 2.;
 
     let position_curve = AnimatableCurve::new(
-        animated_field!(LedSequence::position),
-        EasingCurve::new(0., 7., EaseFunction::Linear)
+        animated_field!(LedGradient::position),
+        EasingCurve::new(2., 7., EaseFunction::CubicOut)
             .ping_pong()
             .unwrap()
             .reparametrize_linear(interval(0., duration).unwrap())
             .unwrap(),
     );
 
-    let color_curve = AnimatableCurve::new(
-        animated_field!(LedSequence::color),
-        EasingCurve::new(RED, YELLOW, EaseFunction::Linear)
+    let from_color_curve = AnimatableCurve::new(
+        animated_field!(LedGradient::from_color),
+        EasingCurve::new(RED, BLUE, EaseFunction::Linear)
+            .ping_pong()
+            .unwrap()
+            .reparametrize_linear(interval(0., duration).unwrap())
+            .unwrap(),
+    );
+
+    let to_color_curve = AnimatableCurve::new(
+        animated_field!(LedGradient::to_color),
+        EasingCurve::new(BLUE, TEAL_400, EaseFunction::Linear)
             .ping_pong()
             .unwrap()
             .reparametrize_linear(interval(0., duration).unwrap())
@@ -104,7 +115,8 @@ fn setup_seq(
 
     let mut clip = AnimationClip::default();
     clip.add_curve_to_target(target_id, position_curve);
-    clip.add_curve_to_target(target_id, color_curve);
+    clip.add_curve_to_target(target_id, from_color_curve);
+    clip.add_curve_to_target(target_id, to_color_curve);
 
     let clip_handle = animation_clips.add(clip);
     let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
