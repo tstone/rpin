@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bevy::animation::*;
 use bevy::log::{Level, LogPlugin};
 use bevy::{color::palettes::css::*, prelude::*};
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
@@ -63,13 +64,47 @@ fn setup_one(mut query: Query<&mut RgbLed>) {
     led.color = RED;
 }
 
-fn setup_seq(query: Query<&Name, With<RgbLed>>, mut commands: Commands) {
-    let names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
+fn setup_seq(
+    query: Query<&Name, With<RgbLed>>,
+    mut commands: Commands,
+    mut animation_graphs: ResMut<Assets<AnimationGraph>>,
+    mut animation_clips: ResMut<Assets<AnimationClip>>,
+) {
+    let led_names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
     let seq = LedSequence {
-        position: 5.,
+        position: 4.,
         color: ORANGE,
-        names,
+        names: led_names,
         behavior: LedSequenceFill::ProgressGradient(BLUE),
     };
-    commands.spawn(seq);
+
+    let name = Name::new("led_seq_example");
+    let target_id = AnimationTargetId::from_name(&name);
+    let mut entity_commands = commands.spawn((name, seq));
+
+    let position_curve = AnimatableCurve::new(
+        animated_field!(LedSequence::position),
+        EasingCurve::new(0., 7., EaseFunction::Linear)
+            .ping_pong()
+            .unwrap(),
+    );
+
+    let mut clip = AnimationClip::default();
+    clip.add_curve_to_target(target_id, position_curve);
+
+    let clip_handle = animation_clips.add(clip);
+    let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
+    let graph_handle = animation_graphs.add(graph);
+
+    let mut player = AnimationPlayer::default();
+    player.play(animation_index).repeat();
+
+    entity_commands.insert((
+        player,
+        AnimationGraphHandle(graph_handle),
+        AnimationTarget {
+            id: target_id,
+            player: entity_commands.id(),
+        },
+    ));
 }

@@ -2,6 +2,7 @@ use bevy::{color::palettes::css::BLACK, prelude::*};
 
 use crate::pinball::RgbLed;
 
+/// Plugin that renders LED sequences, a 1-dimensional listing of LEDs with multiple fill options
 pub struct LedSequencePlugin;
 
 impl Plugin for LedSequencePlugin {
@@ -58,14 +59,9 @@ fn render_led_seq(
                     LedSequenceFill::Progress => {
                         render_progress(seq.position, i, seq.color, &mut led)
                     }
-                    LedSequenceFill::ProgressGradient(from_color) => render_progress_grad(
-                        seq.position,
-                        i,
-                        seq.color,
-                        from_color,
-                        &mut led,
-                        seq.names.len(),
-                    ),
+                    LedSequenceFill::ProgressGradient(from_color) => {
+                        render_progress_grad(seq.position, i, seq.color, from_color, &mut led)
+                    }
                     LedSequenceFill::TailFade(tail_len) => {
                         render_tail(seq.position, i, seq.color, &mut led, tail_len);
                     }
@@ -122,7 +118,7 @@ fn render_single(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
 }
 
 fn render_progress(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
-    if current <= active.floor() as usize {
+    if current <= round_to_nearest(active) as usize {
         led.color = color;
     } else {
         led.color = BLACK;
@@ -135,10 +131,17 @@ fn render_progress_grad(
     to_color: Srgba,
     from_color: Srgba,
     led: &mut RgbLed,
-    led_count: usize,
 ) {
-    if current as f32 <= active {
-        render_grad(active, current, to_color, from_color, led, led_count)
+    let position = round_to_nearest(active);
+    if current as f32 == position {
+        led.color = to_color;
+    } else if current as f32 <= active {
+        let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
+        let ratio = grad_ratio(position as usize, current, position);
+        led.color = match curve.sample(1.0 - ratio) {
+            Some(color) => color,
+            None => BLACK,
+        };
     } else {
         led.color = BLACK;
     }
@@ -157,15 +160,16 @@ fn render_tail_grad(
     led: &mut RgbLed,
     tail_len: u8,
 ) {
-    if current as f32 <= active {
-        render_grad(
-            active,
-            current,
-            to_color,
-            from_color,
-            led,
-            tail_len as usize + 1,
-        )
+    let position = round_to_nearest(active);
+    if current as f32 == position {
+        led.color = to_color;
+    } else if current as f32 <= active {
+        let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
+        let ratio = grad_ratio(tail_len as usize, current, position);
+        led.color = match curve.sample(1.0 - ratio) {
+            Some(color) => color,
+            None => BLACK,
+        };
     } else {
         led.color = BLACK;
     }
@@ -179,18 +183,29 @@ fn render_grad(
     led: &mut RgbLed,
     led_count: usize,
 ) {
+    let position = round_to_nearest(active);
     let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
-    let ratio = grad_ratio(led_count, current, active);
+    let ratio = grad_ratio(led_count, current, position);
     led.color = match curve.sample(ratio) {
         Some(color) => color,
         None => BLACK,
     };
 }
 
-fn grad_ratio(led_count: usize, current: usize, active: f32) -> f32 {
-    let mut ratio = (led_count as f32 - current as f32 + active as f32 + 1.) / led_count as f32;
+fn round_to_nearest(value: f32) -> f32 {
+    let floor = value.floor();
+    let rem = value - floor;
+    if rem >= 0.5 {
+        value.ceil()
+    } else {
+        floor
+    }
+}
+
+fn grad_ratio(led_count: usize, current: usize, position: f32) -> f32 {
+    let mut ratio = (led_count as f32 - current as f32 + position) / led_count as f32;
     if ratio > 1.0 {
         ratio -= 1.0;
     }
-    return 1.0 - ratio;
+    return ratio;
 }
