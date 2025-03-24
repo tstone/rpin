@@ -21,11 +21,17 @@ pub struct LedSequence {
 #[derive(Clone, Debug, Default, Reflect)]
 pub enum LedSequenceFill {
     #[default]
+    /// Interpolates a single point to render on 1-2 LEDs at position
     Single,
+    /// Illuminates all points up to position
     Progress,
+    /// Illuminates all points up to position with a gradient of colors (from color)
     ProgressGradient(Srgba),
+    /// Illuminates all LEDs from color to color, with the position being the start of the gradient
     Gradient(Srgba),
-    Tail(u8),
+    /// Illuminates the point an N additional points, fading to black
+    TailFade(u8),
+    /// Illuminates the point an N additional points, fading to the given color
     TailGradient(u8, Srgba),
 }
 
@@ -60,7 +66,7 @@ fn render_led_seq(
                         &mut led,
                         seq.names.len(),
                     ),
-                    LedSequenceFill::Tail(tail_len) => {
+                    LedSequenceFill::TailFade(tail_len) => {
                         render_tail(seq.position, i, seq.color, &mut led, tail_len);
                     }
                     LedSequenceFill::TailGradient(tail_len, from_color) => {
