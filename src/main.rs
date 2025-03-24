@@ -77,7 +77,7 @@ fn setup_seq(
         from_color: RED,
         to_color: BLUE,
         names: led_names,
-        behavior: LedGradientFill::Tail(2),
+        behavior: LedGradientFill::Continuous,
     };
 
     let name = Name::new("led_seq_example");
@@ -88,7 +88,7 @@ fn setup_seq(
 
     let position_curve = AnimatableCurve::new(
         animated_field!(LedGradient::position),
-        EasingCurve::new(2., 7., EaseFunction::CubicOut)
+        EasingCurve::new(2., 7., EaseFunction::Steps(6))
             .ping_pong()
             .unwrap()
             .reparametrize_linear(interval(0., duration).unwrap())
@@ -115,8 +115,8 @@ fn setup_seq(
 
     let mut clip = AnimationClip::default();
     clip.add_curve_to_target(target_id, position_curve);
-    clip.add_curve_to_target(target_id, from_color_curve);
-    clip.add_curve_to_target(target_id, to_color_curve);
+    // clip.add_curve_to_target(target_id, from_color_curve);
+    // clip.add_curve_to_target(target_id, to_color_curve);
 
     let clip_handle = animation_clips.add(clip);
     let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
