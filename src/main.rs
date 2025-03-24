@@ -73,9 +73,9 @@ fn setup_seq(
     let led_names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
     let seq = LedSequence {
         position: 4.,
-        color: YELLOW,
+        color: RED,
         names: led_names,
-        behavior: LedSequenceFill::Split(1),
+        behavior: LedSequenceFill::Split(2),
     };
 
     let name = Name::new("led_seq_example");
@@ -86,7 +86,7 @@ fn setup_seq(
 
     let position_curve = AnimatableCurve::new(
         animated_field!(LedSequence::position),
-        EasingCurve::new(0., 7., EaseFunction::QuadraticOut)
+        EasingCurve::new(0., 7., EaseFunction::Linear)
             .ping_pong()
             .unwrap()
             .reparametrize_linear(interval(0., duration).unwrap())
@@ -95,14 +95,16 @@ fn setup_seq(
 
     let color_curve = AnimatableCurve::new(
         animated_field!(LedSequence::color),
-        EasingCurve::new(YELLOW, RED, EaseFunction::CircularOut)
+        EasingCurve::new(RED, YELLOW, EaseFunction::Linear)
+            .ping_pong()
+            .unwrap()
             .reparametrize_linear(interval(0., duration).unwrap())
             .unwrap(),
     );
 
     let mut clip = AnimationClip::default();
     clip.add_curve_to_target(target_id, position_curve);
-    // clip.add_curve_to_target(target_id, color_curve);
+    clip.add_curve_to_target(target_id, color_curve);
 
     let clip_handle = animation_clips.add(clip);
     let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);

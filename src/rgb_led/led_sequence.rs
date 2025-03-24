@@ -1,4 +1,7 @@
+use std::hint::black_box;
+
 use bevy::{color::palettes::css::BLACK, prelude::*};
+use noise::{NoiseFn, Perlin};
 
 use crate::pinball::RgbLed;
 
@@ -36,10 +39,7 @@ pub enum LedSequenceFill {
     TailGradient(u8, Srgba),
     /// Illuminates the position, first point, and N points in the middle
     Split(u8),
-    // Position becomes the seed. Illuminates above the given threshold.
-    // Perlin(f32),
-    // Position becomes the seed. Illuminates above the given threshold.
-    // PerlinGradient(f32),
+    // maybe just a regular Noise/NoiseGrad
 }
 
 // TODO: can an observer be used here?
@@ -133,6 +133,7 @@ fn render_split(active: f32, current: usize, color: Srgba, led: &mut RgbLed, cou
     }
 
     let position = round_to_nearest(active);
+    // TODO: this doesn't seem to work with count > 1
     let mid = (active / (count + 1) as f32).ceil();
     if current == position as usize || current == mid as usize {
         led.color = color;
