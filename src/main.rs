@@ -30,7 +30,7 @@ fn main() {
         ..Default::default()
     }))
     .add_plugins(PinballBase {
-        led_brightness_scale: 0.75,
+        led_brightness_scale: 0.66,
     })
     .add_plugins(Neutron {
         io_port_path: "COM5",
@@ -66,10 +66,10 @@ fn setup_one(mut query: Query<&mut RgbLed>) {
 fn setup_seq(query: Query<&Name, With<RgbLed>>, mut commands: Commands) {
     let names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
     let seq = LedSequence {
-        position: 7.,
-        color: RED,
+        position: 5.,
+        color: ORANGE,
         names,
-        behavior: LedSequenceFill::Gradient(BLUE),
+        behavior: LedSequenceFill::ProgressGradient(BLUE),
     };
     commands.spawn(seq);
 }

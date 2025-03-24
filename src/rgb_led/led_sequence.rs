@@ -22,7 +22,8 @@ pub struct LedSequence {
 pub enum LedSequenceFill {
     #[default]
     Single,
-    Solid,
+    Progress,
+    ProgressGradient(Srgba),
     Gradient(Srgba),
     Tail(u8),
     TailGradient(u8, Srgba),
@@ -48,8 +49,10 @@ fn render_led_seq(
             for i in indexes {
                 match seq.behavior {
                     LedSequenceFill::Single => render_single(seq.position, i, seq.color, &mut led),
-                    LedSequenceFill::Solid => render_filled(seq.position, i, seq.color, &mut led),
-                    LedSequenceFill::Gradient(from_color) => render_gradient(
+                    LedSequenceFill::Progress => {
+                        render_progress(seq.position, i, seq.color, &mut led)
+                    }
+                    LedSequenceFill::ProgressGradient(from_color) => render_progress_grad(
                         seq.position,
                         i,
                         seq.color,
@@ -70,6 +73,14 @@ fn render_led_seq(
                             tail_len,
                         );
                     }
+                    LedSequenceFill::Gradient(from_color) => render_grad(
+                        seq.position,
+                        i,
+                        seq.color,
+                        from_color,
+                        &mut led,
+                        seq.names.len(),
+                    ),
                 }
             }
         }
@@ -104,7 +115,7 @@ fn render_single(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
     }
 }
 
-fn render_filled(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
+fn render_progress(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
     if current <= active.floor() as usize {
         led.color = color;
     } else {
@@ -112,7 +123,7 @@ fn render_filled(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
     }
 }
 
-fn render_gradient(
+fn render_progress_grad(
     active: f32,
     current: usize,
     to_color: Srgba,
@@ -120,15 +131,8 @@ fn render_gradient(
     led: &mut RgbLed,
     led_count: usize,
 ) {
-    let rounded = active.floor() as usize;
-    if rounded == current {
-        led.color = to_color;
-    } else if current < rounded {
-        let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
-        led.color = match curve.sample(current as f32 / led_count as f32) {
-            Some(color) => color,
-            None => from_color,
-        };
+    if current as f32 <= active {
+        render_grad(active, current, to_color, from_color, led, led_count)
     } else {
         led.color = BLACK;
     }
@@ -147,18 +151,40 @@ fn render_tail_grad(
     led: &mut RgbLed,
     tail_len: u8,
 ) {
-    let rounded = active.floor() as usize;
-    let offset_to = (current as i32 - rounded as i32).abs() as u8;
-    if rounded == current {
-        led.color = to_color;
-    } else if current < rounded && offset_to <= tail_len {
-        // TODO: this isn't quite correct
-        let curve = EasingCurve::new(to_color, from_color, EaseFunction::Linear);
-        led.color = match curve.sample(offset_to as f32 / tail_len as f32) {
-            Some(color) => color,
-            None => from_color,
-        };
+    if current as f32 <= active {
+        render_grad(
+            active,
+            current,
+            to_color,
+            from_color,
+            led,
+            tail_len as usize + 1,
+        )
     } else {
         led.color = BLACK;
     }
+}
+
+fn render_grad(
+    active: f32,
+    current: usize,
+    to_color: Srgba,
+    from_color: Srgba,
+    led: &mut RgbLed,
+    led_count: usize,
+) {
+    let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
+    let ratio = grad_ratio(led_count, current, active);
+    led.color = match curve.sample(ratio) {
+        Some(color) => color,
+        None => BLACK,
+    };
+}
+
+fn grad_ratio(led_count: usize, current: usize, active: f32) -> f32 {
+    let mut ratio = (led_count as f32 - current as f32 + active as f32 + 1.) / led_count as f32;
+    if ratio > 1.0 {
+        ratio -= 1.0;
+    }
+    return 1.0 - ratio;
 }
