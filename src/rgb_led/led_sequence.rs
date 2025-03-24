@@ -34,6 +34,12 @@ pub enum LedSequenceFill {
     TailFade(u8),
     /// Illuminates the point an N additional points, fading to the given color
     TailGradient(u8, Srgba),
+    /// Illuminates the position, first point, and N points in the middle
+    Split(u8),
+    // Position becomes the seed. Illuminates above the given threshold.
+    // Perlin(f32),
+    // Position becomes the seed. Illuminates above the given threshold.
+    // PerlinGradient(f32),
 }
 
 // TODO: can an observer be used here?
@@ -83,6 +89,9 @@ fn render_led_seq(
                         &mut led,
                         seq.names.len(),
                     ),
+                    LedSequenceFill::Split(n) => {
+                        render_split(seq.position, i, seq.color, &mut led, n)
+                    }
                 }
             }
         }
@@ -112,6 +121,21 @@ fn render_single(active: f32, current: usize, color: Srgba, led: &mut RgbLed) {
         } else {
             led.color = color.with_luminance(lum / 4.);
         }
+    } else {
+        led.color = BLACK;
+    }
+}
+
+fn render_split(active: f32, current: usize, color: Srgba, led: &mut RgbLed, count: u8) {
+    if current == 0 {
+        led.color = color;
+        return;
+    }
+
+    let position = round_to_nearest(active);
+    let mid = (active / (count + 1) as f32).ceil();
+    if current == position as usize || current == mid as usize {
+        led.color = color;
     } else {
         led.color = BLACK;
     }
@@ -184,7 +208,7 @@ fn render_grad(
     led_count: usize,
 ) {
     let position = round_to_nearest(active);
-    let curve = EasingCurve::new(from_color, to_color, EaseFunction::Linear);
+    let curve = EasingCurve::new(to_color, from_color, EaseFunction::Linear);
     let ratio = grad_ratio(led_count, current, position);
     led.color = match curve.sample(ratio) {
         Some(color) => color,

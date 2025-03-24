@@ -15,7 +15,7 @@ impl Default for ExpansionLeds {
     fn default() -> Self {
         Self {
             leds: Default::default(),
-            update_hz: 24.0,
+            update_hz: 24.,
         }
     }
 }

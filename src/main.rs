@@ -73,24 +73,36 @@ fn setup_seq(
     let led_names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
     let seq = LedSequence {
         position: 4.,
-        color: ORANGE,
+        color: YELLOW,
         names: led_names,
-        behavior: LedSequenceFill::ProgressGradient(BLUE),
+        behavior: LedSequenceFill::Split(1),
     };
 
     let name = Name::new("led_seq_example");
     let target_id = AnimationTargetId::from_name(&name);
     let mut entity_commands = commands.spawn((name, seq));
 
+    let duration = 2.0;
+
     let position_curve = AnimatableCurve::new(
         animated_field!(LedSequence::position),
-        EasingCurve::new(0., 7., EaseFunction::Linear)
+        EasingCurve::new(0., 7., EaseFunction::QuadraticOut)
             .ping_pong()
+            .unwrap()
+            .reparametrize_linear(interval(0., duration).unwrap())
+            .unwrap(),
+    );
+
+    let color_curve = AnimatableCurve::new(
+        animated_field!(LedSequence::color),
+        EasingCurve::new(YELLOW, RED, EaseFunction::CircularOut)
+            .reparametrize_linear(interval(0., duration).unwrap())
             .unwrap(),
     );
 
     let mut clip = AnimationClip::default();
     clip.add_curve_to_target(target_id, position_curve);
+    // clip.add_curve_to_target(target_id, color_curve);
 
     let clip_handle = animation_clips.add(clip);
     let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
