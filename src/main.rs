@@ -1,11 +1,9 @@
-use std::cmp;
 use std::collections::HashMap;
 
-use bevy::color::palettes::tailwind::{PINK_950, PURPLE_950, SKY_800};
 use bevy::log::{Level, LogPlugin};
 use bevy::{color::palettes::css::*, prelude::*};
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
-use pinball::dev_tools::{keyboard::SwitchEmulator, PinballDebugLogger};
+use pinball::dev_tools::keyboard::SwitchEmulator;
 use pinball::*;
 use rgb_led::{LedSequence, LedSequenceFill, LedSequencePlugin};
 
@@ -31,6 +29,9 @@ fn main() {
         level: Level::TRACE,
         ..Default::default()
     }))
+    .add_plugins(PinballBase {
+        led_brightness_scale: 0.75,
+    })
     .add_plugins(Neutron {
         io_port_path: "COM5",
         exp_port_path: "COM7",
@@ -40,7 +41,6 @@ fn main() {
         leds: playfield_leds,
         ..Default::default()
     })
-    .add_plugins(PinballBase)
     .add_plugins(LedSequencePlugin);
 
     #[cfg(debug_assertions)]
@@ -66,10 +66,10 @@ fn setup_one(mut query: Query<&mut RgbLed>) {
 fn setup_seq(query: Query<&Name, With<RgbLed>>, mut commands: Commands) {
     let names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
     let seq = LedSequence {
-        position: 5.,
+        position: 7.,
         color: RED,
         names,
-        behavior: LedSequenceFill::Tail(2),
+        behavior: LedSequenceFill::Gradient(BLUE),
     };
     commands.spawn(seq);
 }

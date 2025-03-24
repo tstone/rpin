@@ -4,7 +4,6 @@ use super::{
     parser::FastIoEvent,
     resources::{ExpPort, IoNetPort},
     serial::*,
-    ExpansionBoard,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -17,7 +16,6 @@ use std::{
 pub struct Neutron {
     pub(crate) io_port_path: &'static str,
     pub(crate) exp_port_path: &'static str,
-    pub(crate) default_led_brightness: f32,
 }
 
 impl Plugin for Neutron {
@@ -63,18 +61,5 @@ impl Plugin for Neutron {
         let mutex = Mutex::new(exp_path);
         app.insert_resource(ExpPort(Arc::new(mutex)));
         app.add_systems(FixedFirst, exp_read);
-
-        app.insert_resource(NeutronConfig {
-            default_led_brightness: self.default_led_brightness,
-            expansion_boards: Vec::new(),
-            ..Default::default()
-        });
     }
-}
-
-#[derive(Resource, Debug, Clone, Default)]
-#[allow(dead_code)]
-struct NeutronConfig {
-    pub default_led_brightness: f32,
-    pub expansion_boards: Vec<ExpansionBoard>,
 }

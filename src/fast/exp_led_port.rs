@@ -1,7 +1,7 @@
 use bevy::{color::palettes::css::BLACK, prelude::*, time::common_conditions::on_timer};
 use std::{fmt::Debug, time::Duration};
 
-use crate::pinball::RgbLed;
+use crate::pinball::{PinballConfig, RgbLed};
 
 use super::{resources::ExpPort, serial::exp_write, ExpansionBoard};
 
@@ -49,10 +49,18 @@ impl Plugin for ExpansionLeds {
 
 fn led_change_listener(
     query: Query<(&RgbLed, &FastExpansionDevice), Changed<RgbLed>>,
+    pinball_config: Res<PinballConfig>,
     port: ResMut<ExpPort>,
 ) {
     for (indicator, led) in &query {
-        let data = led_color_event(led, indicator.color);
+        let color = if pinball_config.led_luminance_scale != 1.0 {
+            // scale brightness if not 1.0
+            let hsl = Hsla::from(indicator.color);
+            Srgba::from(hsl.with_lightness(hsl.lightness * pinball_config.led_luminance_scale))
+        } else {
+            indicator.color
+        };
+        let data = led_color_event(led, color);
         exp_write(data, &port);
     }
 }
