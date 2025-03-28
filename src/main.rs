@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use bevy::animation::*;
 use bevy::color::palettes::tailwind::{TEAL_200, TEAL_400};
@@ -7,7 +8,10 @@ use bevy::{color::palettes::css::*, prelude::*};
 use fast::{ExpansionBoard, ExpansionLeds, LedDefinition, Neutron};
 use pinball::dev_tools::keyboard::SwitchEmulator;
 use pinball::*;
-use rgb_led::{LedGradient, LedGradientFill, LedSequence, LedSequenceFill, RgbLedPlugin};
+use rgb_led::{
+    Animatable, Animation, AnimationStage, Curve, LedGradient, LedGradientFill, LedSequence,
+    LedSequenceFill, RgbLedPlugin,
+};
 
 mod examples;
 mod fast;
@@ -55,82 +59,44 @@ fn main() {
         CabinetSwitches::AddCoin,
     )])));
 
-    app.add_systems(Startup, setup_seq);
-    // app.add_systems(Startup, setup_one);
+    app.add_systems(PostStartup, setup_one);
     app.run();
 }
 
-fn setup_one(mut query: Query<&mut RgbLed>) {
-    let mut led = query.iter_mut().take(1).next().unwrap();
-    led.color = RED;
-}
+fn setup_one(mut query: Query<&mut Animatable<Srgba, RgbLed>>) {
+    let mut animatable = query.iter_mut().take(1).next().unwrap();
+    // let anim = Animation::tween(vec![
+    //     (BLACK, Duration::from_millis(1500), Curve::Linear),
+    //     (RED, Duration::from_millis(1500), Curve::Sinusoid),
+    //     (BLUE, Duration::from_millis(1500), Curve::Linear),
+    //     (BLACK, Duration::from_millis(1500), Curve::Linear),
+    // ]);
+    // info!("stages: {:?}", anim.stages);
 
-fn setup_seq(
-    query: Query<&Name, With<RgbLed>>,
-    mut commands: Commands,
-    mut animation_graphs: ResMut<Assets<AnimationGraph>>,
-    mut animation_clips: ResMut<Assets<AnimationClip>>,
-) {
-    let led_names = query.iter().take(8).map(|n| n.clone()).collect::<Vec<_>>();
-    let seq = LedGradient {
-        position: 7.,
-        from_color: RED,
-        to_color: BLUE,
-        names: led_names,
-        behavior: LedGradientFill::Continuous,
-    };
+    // let anim = Curve::Sinusoid
+    //     .stage(BLACK, RED, Duration::from_secs(1))
+    //     .repeat(5)
+    //     .chain(
+    //         Curve::Sinusoid
+    //             .stage(BLACK, RED, Duration::from_millis(750))
+    //             .repeat(2),
+    //     )
+    //     .chain(
+    //         Curve::Sinusoid
+    //             .stage(BLACK, RED, Duration::from_millis(500))
+    //             .repeat(4),
+    //     )
+    //     .chain(
+    //         Curve::Sinusoid
+    //             .stage(BLACK, RED, Duration::from_millis(250))
+    //             .repeat(6),
+    //     )
+    //     .chain(
+    //         Curve::Sinusoid
+    //             .stage(BLACK, RED, Duration::from_millis(125))
+    //             .repeat(8),
+    //     );
 
-    let name = Name::new("led_seq_example");
-    let target_id = AnimationTargetId::from_name(&name);
-    let mut entity_commands = commands.spawn((name, seq));
-
-    let duration = 2.;
-
-    let position_curve = AnimatableCurve::new(
-        animated_field!(LedGradient::position),
-        EasingCurve::new(2., 7., EaseFunction::Steps(6))
-            .ping_pong()
-            .unwrap()
-            .reparametrize_linear(interval(0., duration).unwrap())
-            .unwrap(),
-    );
-
-    let from_color_curve = AnimatableCurve::new(
-        animated_field!(LedGradient::from_color),
-        EasingCurve::new(RED, BLUE, EaseFunction::Linear)
-            .ping_pong()
-            .unwrap()
-            .reparametrize_linear(interval(0., duration).unwrap())
-            .unwrap(),
-    );
-
-    let to_color_curve = AnimatableCurve::new(
-        animated_field!(LedGradient::to_color),
-        EasingCurve::new(BLUE, TEAL_400, EaseFunction::Linear)
-            .ping_pong()
-            .unwrap()
-            .reparametrize_linear(interval(0., duration).unwrap())
-            .unwrap(),
-    );
-
-    let mut clip = AnimationClip::default();
-    clip.add_curve_to_target(target_id, position_curve);
-    // clip.add_curve_to_target(target_id, from_color_curve);
-    // clip.add_curve_to_target(target_id, to_color_curve);
-
-    let clip_handle = animation_clips.add(clip);
-    let (graph, animation_index) = AnimationGraph::from_clip(clip_handle);
-    let graph_handle = animation_graphs.add(graph);
-
-    let mut player = AnimationPlayer::default();
-    player.play(animation_index).repeat();
-
-    entity_commands.insert((
-        player,
-        AnimationGraphHandle(graph_handle),
-        AnimationTarget {
-            id: target_id,
-            player: entity_commands.id(),
-        },
-    ));
+    let anim = Curve::Steps(4).animate(BLACK, RED, Duration::from_secs(3));
+    animatable.enqueue_and_play(anim.as_continuous());
 }
