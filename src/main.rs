@@ -64,7 +64,50 @@ fn main() {
 }
 
 fn setup_one(mut query: Query<&mut Animatable<Srgba, RgbLed>>) {
-    let mut animatable = query.iter_mut().take(1).next().unwrap();
+    for (i, mut animatable) in query.iter_mut().enumerate() {
+        if i == 0 {
+            let anim = Curve::Sinusoid.animate(BLACK, ORANGE, Duration::from_secs(3));
+            animatable.enqueue_and_play(anim.as_continuous());
+        } else if i == 2 {
+            let anim = Curve::Steps(3).animate(BLACK, ORANGE_RED, Duration::from_secs(6));
+            animatable.enqueue_and_play(anim.as_continuous());
+        } else if i == 4 {
+            let anim = Animation::keyframes(vec![
+                (BLACK, Duration::from_millis(500)),
+                (ORANGE, Duration::from_millis(500)),
+                (BLUE_VIOLET, Duration::from_millis(500)),
+                (BLACK, Duration::from_millis(500)),
+            ]);
+            animatable.enqueue_and_play(anim.as_continuous());
+        } else if i == 6 {
+            let anim = Curve::Sinusoid
+                .stage(BLACK, ORANGE, Duration::from_secs(1))
+                .repeat(5)
+                .chain(
+                    Curve::Sinusoid
+                        .stage(BLACK, ORANGE, Duration::from_millis(750))
+                        .repeat(2),
+                )
+                .chain(
+                    Curve::Sinusoid
+                        .stage(BLACK, ORANGE, Duration::from_millis(500))
+                        .repeat(4),
+                )
+                .chain(
+                    Curve::Sinusoid
+                        .stage(BLACK, ORANGE, Duration::from_millis(250))
+                        .repeat(6),
+                )
+                .chain(
+                    Curve::Sinusoid
+                        .stage(BLACK, ORANGE, Duration::from_millis(125))
+                        .repeat(8),
+                );
+            animatable.enqueue_and_play(anim.as_continuous());
+        }
+    }
+
+    // let mut animatable = query.iter_mut().take(1).next().unwrap();
     // let anim = Animation::tween(vec![
     //     (BLACK, Duration::from_millis(1500), Curve::Linear),
     //     (RED, Duration::from_millis(1500), Curve::Sinusoid),
@@ -96,7 +139,4 @@ fn setup_one(mut query: Query<&mut Animatable<Srgba, RgbLed>>) {
     //             .stage(BLACK, RED, Duration::from_millis(125))
     //             .repeat(8),
     //     );
-
-    let anim = Curve::Steps(4).animate(BLACK, RED, Duration::from_secs(3));
-    animatable.enqueue_and_play(anim.as_continuous());
 }
