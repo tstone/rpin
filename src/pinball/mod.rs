@@ -5,7 +5,7 @@ mod global;
 pub mod inputs;
 pub mod payment;
 
-pub use base::PinballBase;
+pub use base::*;
 pub use components::*;
 pub use global::*;
 pub use inputs::Inputs;

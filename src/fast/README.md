@@ -7,7 +7,11 @@ A collection of simple plugins to allow the Bevy engine to interact with FAST Pi
 The Neutron adds 3 virtual serial ports that handle communications for the NET I/O bus, EXP (expansion) bus, and the DSP (display) bus. This plugin handles communication with the NET and EXP busses.
 
 ```rust
-app.add_plugins(Neutron::new("COM5").add_exp_port("COM7"))
+app.add_plugins(Neutron {
+    io_port_path: "COM5",
+    exp_port_path: "COM7",
+    ..Default::default()
+})
 ```
 
 Adding this plugin will grant access to two things and is required for all other plugins on this document:
@@ -35,36 +39,32 @@ enum PlayfieldIndicators {
 }
 
 // Neutron plugin is required prior to this
-app.add_plugins(ExpansionLeds(vec![
-    LEDDefinition {
-        board: ExpansionBoard::Neutron,
-        port: 0,
-        index: 0,
-        id: PlayfieldIndicators::LeftSpinner,
-        row: 2,
-        col: 0,
-    },
-    LEDDefinition {
-        board: ExpansionBoard::Neutron,
-        port: 0,
-        index: 1,
-        id: PlayfieldIndicators::LeftRamp,
-        row: 4,
-        col: 0,
-    },
-]))
+app.add_plugins(ExpansionLeds {
+    leds: vec![
+        LEDDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            index: 0,
+            name: "thing1".as_str(),
+        },
+        LEDDefinition {
+            board: ExpansionBoard::Neutron,
+            port: 0,
+            index: 1,
+            name: "thing2".as_str(),
+        },
+    ],
+    ..Default::default()
+})
 ```
 
 Adding the `ExpansionLeds` plugin adds an entity per LED with the following components: `Identity`, `Colored`, `Position`, `FastLED`.
 
-Now,, to set the color of an LED it's simply to set `colored.color = Hsla::hsl(0.5, 0.5, 1.0);` The plugin will handle sending the appropriate command to the Neutron.
+Now,, to set the color of an LED it's simply to set `colored.color = Color::hsl(0.5, 0.5, 1.0);` The plugin will handle sending the appropriate command to the Neutron.
 
 ```rust
-fn set_color(query: Query<&Identity, &Colored>) {
-    let left_spinner_led = query.iter().find(|(identity, _)|{ identity.id == PlayfieldIndicators::LeftSpinner });
-    match left_spinner_led {
-        Some((_, colored)) => colored.color = Hsla::hsl(0.5, 0.5, 1.0),
-        _ => ()
-    }
+fn set_color(mut query: Query<&mut RgbLed>) {
+    let mut led = query.iter_mut().take(1).next().unwrap();
+    led.color = RED;
 }
 ```

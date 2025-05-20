@@ -4,7 +4,6 @@ use super::{
     parser::FastIoEvent,
     resources::{ExpPort, IoNetPort},
     serial::*,
-    ExpansionBoard,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -16,30 +15,7 @@ use std::{
 #[derive(Default, Clone)]
 pub struct Neutron {
     pub(crate) io_port_path: &'static str,
-    pub(crate) exp_port_path: Option<&'static str>,
-    pub(crate) default_led_brightness: f32,
-}
-
-impl Neutron {
-    pub fn new(io_port_path: &'static str) -> Self {
-        Neutron {
-            io_port_path,
-            default_led_brightness: 50.,
-            ..Neutron::default()
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn add_exp_port(mut self, path: &'static str) -> Self {
-        self.exp_port_path = Some(path);
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn default_led_brightness(mut self, value: f32) -> Self {
-        self.default_led_brightness = value;
-        self
-    }
+    pub(crate) exp_port_path: &'static str,
 }
 
 impl Plugin for Neutron {
@@ -78,27 +54,12 @@ impl Plugin for Neutron {
         let mutex = Mutex::new(io_port);
         app.insert_resource(IoNetPort(Arc::new(mutex)));
         app.add_event::<FastIoEvent>();
-        app.add_systems(FixedUpdate, io_read);
+        app.add_systems(FixedFirst, io_read);
 
         // Expansion port
-        if let Some(port_path) = self.exp_port_path {
-            let exp_path = connect(port_path);
-            let mutex = Mutex::new(exp_path);
-            app.insert_resource(ExpPort(Arc::new(mutex)));
-            app.add_systems(FixedUpdate, exp_read);
-        }
-
-        app.insert_resource(NeutronConfig {
-            default_led_brightness: self.default_led_brightness,
-            expansion_boards: Vec::new(),
-            ..Default::default()
-        });
+        let exp_path = connect(self.exp_port_path);
+        let mutex = Mutex::new(exp_path);
+        app.insert_resource(ExpPort(Arc::new(mutex)));
+        app.add_systems(FixedFirst, exp_read);
     }
-}
-
-#[derive(Resource, Debug, Clone, Default)]
-#[allow(dead_code)]
-struct NeutronConfig {
-    pub default_led_brightness: f32,
-    pub expansion_boards: Vec<ExpansionBoard>,
 }
