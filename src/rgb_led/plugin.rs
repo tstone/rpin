@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::pinball::RgbLed;
 
 use super::{
-    animatable::{render_all_animatable, Animatable},
+    animatable::{Animatable, render_all_animatable},
     render_led_gradient, render_led_sequence,
 };
 
@@ -31,6 +31,6 @@ fn on_add_rgbled(
     query: Query<Entity, With<RgbLed>>,
     mut commands: Commands,
 ) {
-    let led = query.get(trigger.entity()).unwrap();
+    let led = query.get(trigger.target()).unwrap();
     commands.entity(led).insert(Animatable::color());
 }

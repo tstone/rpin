@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{ecs::component::Mutable, prelude::*};
 
 use crate::pinball::RgbLed;
 
@@ -80,7 +80,7 @@ impl Animatable<Srgba, RgbLed> {
     }
 }
 
-pub fn render_all_animatable<T: Send + Sync + 'static, C: Component>(
+pub fn render_all_animatable<T: Send + Sync + 'static, C: Component<Mutability = Mutable>>(
     mut anims: Query<(&mut Animatable<T, C>, &mut C)>,
     time: Res<Time>,
 ) {
